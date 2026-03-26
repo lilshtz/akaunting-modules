@@ -1,0 +1,20 @@
+{
+    "alias": "estimates",
+    "icon": "request_quote",
+    "version": "1.0.0",
+    "active": 1,
+    "providers": [
+        "Modules\\Estimates\\Providers\\Event",
+        "Modules\\Estimates\\Providers\\Main"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "reports": [],
+    "widgets": [
+        "Modules\\Estimates\\Widgets\\EstimateSummary"
+    ],
+    "settings": [],
+    "extra-modules": {},
+    "routes": {}
+}

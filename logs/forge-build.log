@@ -86,3 +86,20 @@ Done. The CustomFields module was already largely built. I fixed three gaps:
 To https://github.com/lilshtz/akaunting-modules.git
    7f0fd7f..2c41139  master -> master
 [Thu Mar 26 02:53:53 PM UTC 2026] Starting 06-employees-departments
+Committed. The Employees module was already fully built with all required components:
+
+- **Database**: Migration with `departments`, `employees`, `employee_documents` tables (all fields per spec)
+- **Models**: `Employee` (soft deletes, scopes, accessors), `Department` (manager relationship), `EmployeeDocument`
+- **Controllers**: Full CRUD for Employees (with filtering), Departments, EmployeeDocuments (upload/download/delete)
+- **API Controllers**: REST endpoints for employees (list/create/show/update) and departments (list/show)
+- **Views**: Index (filterable table with photos/badges), create (multi-section form), show (profile with documents), edit, department CRUD views
+- **Sidebar**: HR dropdown with Employees and Departments menu items
+- **Widget**: Employee summary (headcount, by department, by type, recent hires)
+- **Form Requests**: Validation for store/update on both entities
+- **Routes**: Admin routes + API routes with Sanctum auth
+
+I added the missing `composer.json` and committed with the specified message.
+[Thu Mar 26 02:56:15 PM UTC 2026] Task 06-employees-departments exit: 0
+To https://github.com/lilshtz/akaunting-modules.git
+   ac98918..3e0729b  master -> master
+[Thu Mar 26 02:56:21 PM UTC 2026] Starting 07-estimates

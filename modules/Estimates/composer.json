@@ -1,0 +1,11 @@
+{
+    "name": "akaunting/estimates",
+    "description": "Estimates module with approval workflow, customer portal, and invoice conversion for Akaunting",
+    "type": "akaunting-module",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Estimates\\": ""
+        }
+    }
+}
