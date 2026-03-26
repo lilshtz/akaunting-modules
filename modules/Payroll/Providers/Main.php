@@ -39,10 +39,12 @@ class Main extends ServiceProvider
             return;
         }
 
-        $path = __DIR__ . '/../Routes/admin.php';
+        foreach (['admin.php', 'portal.php'] as $route) {
+            $path = __DIR__ . '/../Routes/' . $route;
 
-        if (file_exists($path)) {
-            $this->loadRoutesFrom($path);
+            if (file_exists($path)) {
+                $this->loadRoutesFrom($path);
+            }
         }
     }
 

@@ -35,4 +35,10 @@ class PayrollRunEmployee extends Model
     {
         return $this->belongsTo(Employee::class, 'employee_id');
     }
+
+    public function payslip()
+    {
+        return $this->hasOne(Payslip::class, 'employee_id', 'employee_id')
+            ->whereColumn('payroll_run_id', 'payroll_run_employees.payroll_run_id');
+    }
 }

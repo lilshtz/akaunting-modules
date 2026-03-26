@@ -4,6 +4,7 @@ namespace Modules\Employees\Models;
 
 use App\Abstracts\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\Payroll\Models\Payslip;
 
 class Employee extends Model
 {
@@ -69,6 +70,11 @@ class Employee extends Model
     public function documents()
     {
         return $this->hasMany(EmployeeDocument::class, 'employee_id');
+    }
+
+    public function payslips()
+    {
+        return $this->hasMany(Payslip::class, 'employee_id');
     }
 
     public function scopeActive($query)

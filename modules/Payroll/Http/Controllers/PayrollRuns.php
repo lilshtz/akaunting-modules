@@ -12,12 +12,14 @@ use Modules\Payroll\Models\PayCalendar;
 use Modules\Payroll\Models\PayrollRun;
 use Modules\Payroll\Services\PayrollCalculator;
 use Modules\Payroll\Services\PayrollJournalService;
+use Modules\Payroll\Services\PayslipService;
 
 class PayrollRuns extends Controller
 {
     public function __construct(
         protected PayrollCalculator $calculator,
-        protected PayrollJournalService $journalService
+        protected PayrollJournalService $journalService,
+        protected PayslipService $payslipService
     ) {
     }
 
@@ -163,6 +165,7 @@ class PayrollRuns extends Controller
 
         DB::transaction(function () use ($run) {
             $this->journalService->post($run);
+            $this->payslipService->generateForRun($run);
 
             $run->update([
                 'status' => 'completed',
@@ -182,7 +185,7 @@ class PayrollRuns extends Controller
     protected function loadRun(int $id): PayrollRun
     {
         return PayrollRun::where('company_id', company_id())
-            ->with(['calendar', 'approver', 'employees.employee.contact'])
+            ->with(['calendar', 'approver', 'employees.employee.contact', 'employees.employee.department', 'payslips'])
             ->findOrFail($id);
     }
 

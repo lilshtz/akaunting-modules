@@ -44,4 +44,9 @@ class PayrollRun extends Model
     {
         return $this->belongsTo('App\Models\Auth\User', 'approved_by');
     }
+
+    public function payslips()
+    {
+        return $this->hasMany(Payslip::class, 'payroll_run_id');
+    }
 }
