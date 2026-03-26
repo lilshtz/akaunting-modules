@@ -20,19 +20,18 @@ class DoubleEntryDashboard extends Widget
     public function show()
     {
         $companyId = company_id();
-        $service = app(AccountBalanceService::class);
 
         // Income vs Expense chart data (12 months)
         $chartData = $this->getMonthlyChart($companyId);
 
-        // Top 5 accounts by activity
+        // Top 5 accounts by balance
         $topAccounts = $this->getTopAccounts($companyId);
 
-        // Recent journal entries
+        // Recent journal entries (last 10)
         $recentEntries = Journal::where('company_id', $companyId)
             ->orderBy('date', 'desc')
             ->orderBy('id', 'desc')
-            ->limit(5)
+            ->limit(10)
             ->get();
 
         return $this->view('double-entry::widgets.dashboard', compact(
@@ -81,16 +80,28 @@ class DoubleEntryDashboard extends Widget
 
     protected function getTopAccounts(int $companyId): array
     {
-        return JournalLine::join('double_entry_journals', 'double_entry_journals.id', '=', 'double_entry_journal_lines.journal_id')
-            ->join('double_entry_accounts', 'double_entry_accounts.id', '=', 'double_entry_journal_lines.account_id')
-            ->where('double_entry_journals.company_id', $companyId)
-            ->where('double_entry_journals.status', 'posted')
-            ->where('double_entry_journals.date', '>=', now()->subMonths(3)->toDateString())
-            ->groupBy('double_entry_journal_lines.account_id', 'double_entry_accounts.code', 'double_entry_accounts.name')
-            ->selectRaw('double_entry_journal_lines.account_id, double_entry_accounts.code, double_entry_accounts.name, SUM(double_entry_journal_lines.debit + double_entry_journal_lines.credit) as total_activity')
-            ->orderByDesc('total_activity')
-            ->limit(5)
-            ->get()
-            ->toArray();
+        $service = app(AccountBalanceService::class);
+        $accounts = Account::where('company_id', $companyId)
+            ->enabled()
+            ->orderBy('code')
+            ->get();
+
+        $balances = [];
+        foreach ($accounts as $account) {
+            $balance = $service->getBalance($account->id, now()->toDateString(), 'accrual');
+            if (abs($balance) >= 0.01) {
+                $balances[] = [
+                    'code' => $account->code,
+                    'name' => $account->name,
+                    'type' => $account->type,
+                    'balance' => $balance,
+                ];
+            }
+        }
+
+        // Sort by absolute balance descending, take top 5
+        usort($balances, fn($a, $b) => abs($b['balance']) <=> abs($a['balance']));
+
+        return array_slice($balances, 0, 5);
     }
 }

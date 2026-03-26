@@ -103,6 +103,9 @@ return [
     'net_income' => 'Net Income',
     'percentage_of_income' => '% of Income',
     'period_comparison' => 'Period Comparison',
+    'period_breakdown' => 'Period Breakdown',
+    'no_breakdown' => 'No Breakdown',
+    'cost_of_goods_sold' => 'Cost of Goods Sold',
 
     'types' => [
         'asset' => 'Asset',

@@ -13,6 +13,9 @@
         <x-link href="{{ route('double-entry.balance-sheet.export', array_merge(request()->query(), ['format' => 'csv'])) }}">
             {{ trans('double-entry::general.export_csv') }}
         </x-link>
+        <x-link href="{{ route('double-entry.balance-sheet.export', array_merge(request()->query(), ['format' => 'pdf'])) }}">
+            {{ trans('double-entry::general.export_pdf') }}
+        </x-link>
     </x-slot>
 
     <x-slot name="content">
@@ -47,6 +50,8 @@
                 <p class="text-sm text-gray-500">{{ trans('double-entry::general.as_of_date') }}: {{ $asOfDate }} | {{ ucfirst($basis) }}</p>
             </div>
 
+            @php $colSpan = ($comparative && $priorData) ? 3 : 2; @endphp
+
             <table class="w-full">
                 <thead>
                     <tr class="border-b">
@@ -62,24 +67,49 @@
                 <tbody>
                     {{-- ASSETS --}}
                     <tr class="bg-gray-100">
-                        <td colspan="{{ $comparative && $priorData ? 3 : 2 }}" class="px-6 py-2 text-sm font-bold">{{ trans('double-entry::general.types.asset') }}</td>
+                        <td colspan="{{ $colSpan }}" class="px-6 py-2 text-sm font-bold">{{ trans('double-entry::general.types.asset') }}</td>
                     </tr>
-                    @foreach ($data['assets'] as $row)
-                        <tr class="border-b hover:bg-gray-50">
-                            <td class="px-6 py-2 text-sm {{ $row['account']->parent_id ?? false ? 'pl-12' : 'pl-8' }}">
-                                @if (is_object($row['account']) && isset($row['account']->code) && $row['account']->code)
-                                    {{ $row['account']->code }} -
+                    @foreach ($data['assets'] as $groupIdx => $group)
+                        @if (!empty($group['label']))
+                            <tr class="bg-gray-50">
+                                <td colspan="{{ $colSpan }}" class="px-6 py-1 text-sm font-semibold text-gray-600 pl-8">{{ $group['label'] }}</td>
+                            </tr>
+                        @endif
+                        @foreach ($group['accounts'] as $row)
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="px-6 py-2 text-sm {{ $row['account']->parent_id ?? false ? 'pl-14' : 'pl-8' }}">
+                                    @if (is_object($row['account']) && isset($row['account']->code) && $row['account']->code)
+                                        {{ $row['account']->code }} -
+                                    @endif
+                                    {{ $row['account']->name }}
+                                </td>
+                                <td class="px-6 py-2 text-sm text-right">{{ number_format($row['balance'], 2) }}</td>
+                                @if ($comparative && $priorData)
+                                    @php
+                                        $priorBalance = '-';
+                                        foreach ($priorData['assets'] as $pg) {
+                                            $pr = collect($pg['accounts'])->firstWhere('account.id', $row['account']->id ?? null);
+                                            if ($pr) { $priorBalance = number_format($pr['balance'], 2); break; }
+                                        }
+                                    @endphp
+                                    <td class="px-6 py-2 text-sm text-right">{{ $priorBalance }}</td>
                                 @endif
-                                {{ $row['account']->name }}
-                            </td>
-                            <td class="px-6 py-2 text-sm text-right">{{ number_format($row['balance'], 2) }}</td>
-                            @if ($comparative && $priorData)
-                                @php
-                                    $priorRow = collect($priorData['assets'])->firstWhere('account.id', $row['account']->id ?? null);
-                                @endphp
-                                <td class="px-6 py-2 text-sm text-right">{{ $priorRow ? number_format($priorRow['balance'], 2) : '-' }}</td>
-                            @endif
-                        </tr>
+                            </tr>
+                        @endforeach
+                        @if (!empty($group['label']) && $group['subtotal'] != 0)
+                            <tr class="border-b bg-gray-50">
+                                <td class="px-6 py-1 text-xs font-medium text-gray-500 pl-10">Subtotal: {{ $group['label'] }}</td>
+                                <td class="px-6 py-1 text-xs text-right text-gray-500">{{ number_format($group['subtotal'], 2) }}</td>
+                                @if ($comparative && $priorData)
+                                    <td class="px-6 py-1 text-xs text-right text-gray-500">
+                                        @php
+                                            $priorGroup = collect($priorData['assets'])->firstWhere('label', $group['label']);
+                                        @endphp
+                                        {{ $priorGroup ? number_format($priorGroup['subtotal'], 2) : '-' }}
+                                    </td>
+                                @endif
+                            </tr>
+                        @endif
                     @endforeach
                     <tr class="border-b bg-gray-50 font-semibold">
                         <td class="px-6 py-2 text-sm">{{ trans('double-entry::general.total_assets') }}</td>
@@ -91,24 +121,47 @@
 
                     {{-- LIABILITIES --}}
                     <tr class="bg-gray-100">
-                        <td colspan="{{ $comparative && $priorData ? 3 : 2 }}" class="px-6 py-2 text-sm font-bold">{{ trans('double-entry::general.types.liability') }}</td>
+                        <td colspan="{{ $colSpan }}" class="px-6 py-2 text-sm font-bold">{{ trans('double-entry::general.types.liability') }}</td>
                     </tr>
-                    @foreach ($data['liabilities'] as $row)
-                        <tr class="border-b hover:bg-gray-50">
-                            <td class="px-6 py-2 text-sm {{ $row['account']->parent_id ?? false ? 'pl-12' : 'pl-8' }}">
-                                @if (is_object($row['account']) && isset($row['account']->code) && $row['account']->code)
-                                    {{ $row['account']->code }} -
+                    @foreach ($data['liabilities'] as $group)
+                        @if (!empty($group['label']))
+                            <tr class="bg-gray-50">
+                                <td colspan="{{ $colSpan }}" class="px-6 py-1 text-sm font-semibold text-gray-600 pl-8">{{ $group['label'] }}</td>
+                            </tr>
+                        @endif
+                        @foreach ($group['accounts'] as $row)
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="px-6 py-2 text-sm {{ $row['account']->parent_id ?? false ? 'pl-14' : 'pl-8' }}">
+                                    @if (is_object($row['account']) && isset($row['account']->code) && $row['account']->code)
+                                        {{ $row['account']->code }} -
+                                    @endif
+                                    {{ $row['account']->name }}
+                                </td>
+                                <td class="px-6 py-2 text-sm text-right">{{ number_format($row['balance'], 2) }}</td>
+                                @if ($comparative && $priorData)
+                                    @php
+                                        $priorBalance = '-';
+                                        foreach ($priorData['liabilities'] as $pg) {
+                                            $pr = collect($pg['accounts'])->firstWhere('account.id', $row['account']->id ?? null);
+                                            if ($pr) { $priorBalance = number_format($pr['balance'], 2); break; }
+                                        }
+                                    @endphp
+                                    <td class="px-6 py-2 text-sm text-right">{{ $priorBalance }}</td>
                                 @endif
-                                {{ $row['account']->name }}
-                            </td>
-                            <td class="px-6 py-2 text-sm text-right">{{ number_format($row['balance'], 2) }}</td>
-                            @if ($comparative && $priorData)
-                                @php
-                                    $priorRow = collect($priorData['liabilities'])->firstWhere('account.id', $row['account']->id ?? null);
-                                @endphp
-                                <td class="px-6 py-2 text-sm text-right">{{ $priorRow ? number_format($priorRow['balance'], 2) : '-' }}</td>
-                            @endif
-                        </tr>
+                            </tr>
+                        @endforeach
+                        @if (!empty($group['label']) && $group['subtotal'] != 0)
+                            <tr class="border-b bg-gray-50">
+                                <td class="px-6 py-1 text-xs font-medium text-gray-500 pl-10">Subtotal: {{ $group['label'] }}</td>
+                                <td class="px-6 py-1 text-xs text-right text-gray-500">{{ number_format($group['subtotal'], 2) }}</td>
+                                @if ($comparative && $priorData)
+                                    <td class="px-6 py-1 text-xs text-right text-gray-500">
+                                        @php $priorGroup = collect($priorData['liabilities'])->firstWhere('label', $group['label']); @endphp
+                                        {{ $priorGroup ? number_format($priorGroup['subtotal'], 2) : '-' }}
+                                    </td>
+                                @endif
+                            </tr>
+                        @endif
                     @endforeach
                     <tr class="border-b bg-gray-50 font-semibold">
                         <td class="px-6 py-2 text-sm">{{ trans('double-entry::general.total_liabilities') }}</td>
@@ -120,24 +173,47 @@
 
                     {{-- EQUITY --}}
                     <tr class="bg-gray-100">
-                        <td colspan="{{ $comparative && $priorData ? 3 : 2 }}" class="px-6 py-2 text-sm font-bold">{{ trans('double-entry::general.types.equity') }}</td>
+                        <td colspan="{{ $colSpan }}" class="px-6 py-2 text-sm font-bold">{{ trans('double-entry::general.types.equity') }}</td>
                     </tr>
-                    @foreach ($data['equity'] as $row)
-                        <tr class="border-b hover:bg-gray-50">
-                            <td class="px-6 py-2 text-sm {{ $row['account']->parent_id ?? false ? 'pl-12' : 'pl-8' }}">
-                                @if (is_object($row['account']) && isset($row['account']->code) && $row['account']->code)
-                                    {{ $row['account']->code }} -
+                    @foreach ($data['equity'] as $group)
+                        @if (!empty($group['label']))
+                            <tr class="bg-gray-50">
+                                <td colspan="{{ $colSpan }}" class="px-6 py-1 text-sm font-semibold text-gray-600 pl-8">{{ $group['label'] }}</td>
+                            </tr>
+                        @endif
+                        @foreach ($group['accounts'] as $row)
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="px-6 py-2 text-sm {{ $row['account']->parent_id ?? false ? 'pl-14' : 'pl-8' }}">
+                                    @if (is_object($row['account']) && isset($row['account']->code) && $row['account']->code)
+                                        {{ $row['account']->code }} -
+                                    @endif
+                                    {{ $row['account']->name }}
+                                </td>
+                                <td class="px-6 py-2 text-sm text-right">{{ number_format($row['balance'], 2) }}</td>
+                                @if ($comparative && $priorData)
+                                    @php
+                                        $priorBalance = '-';
+                                        foreach ($priorData['equity'] as $pg) {
+                                            $pr = collect($pg['accounts'])->firstWhere('account.id', $row['account']->id ?? null);
+                                            if ($pr) { $priorBalance = number_format($pr['balance'], 2); break; }
+                                        }
+                                    @endphp
+                                    <td class="px-6 py-2 text-sm text-right">{{ $priorBalance }}</td>
                                 @endif
-                                {{ $row['account']->name }}
-                            </td>
-                            <td class="px-6 py-2 text-sm text-right">{{ number_format($row['balance'], 2) }}</td>
-                            @if ($comparative && $priorData)
-                                @php
-                                    $priorRow = collect($priorData['equity'])->firstWhere('account.id', $row['account']->id ?? null);
-                                @endphp
-                                <td class="px-6 py-2 text-sm text-right">{{ $priorRow ? number_format($priorRow['balance'], 2) : '-' }}</td>
-                            @endif
-                        </tr>
+                            </tr>
+                        @endforeach
+                        @if (!empty($group['label']) && $group['subtotal'] != 0)
+                            <tr class="border-b bg-gray-50">
+                                <td class="px-6 py-1 text-xs font-medium text-gray-500 pl-10">Subtotal: {{ $group['label'] }}</td>
+                                <td class="px-6 py-1 text-xs text-right text-gray-500">{{ number_format($group['subtotal'], 2) }}</td>
+                                @if ($comparative && $priorData)
+                                    <td class="px-6 py-1 text-xs text-right text-gray-500">
+                                        @php $priorGroup = collect($priorData['equity'])->firstWhere('label', $group['label']); @endphp
+                                        {{ $priorGroup ? number_format($priorGroup['subtotal'], 2) : '-' }}
+                                    </td>
+                                @endif
+                            </tr>
+                        @endif
                     @endforeach
                     <tr class="border-b bg-gray-50 font-semibold">
                         <td class="px-6 py-2 text-sm">{{ trans('double-entry::general.total_equity') }}</td>
@@ -156,7 +232,7 @@
                         @endif
                     </tr>
                     <tr>
-                        <td colspan="{{ $comparative && $priorData ? 3 : 2 }}" class="px-6 py-2 text-center text-xs {{ $data['is_balanced'] ? 'text-green-600' : 'text-red-600' }} font-medium">
+                        <td colspan="{{ $colSpan }}" class="px-6 py-2 text-center text-xs {{ $data['is_balanced'] ? 'text-green-600' : 'text-red-600' }} font-medium">
                             @if ($data['is_balanced'])
                                 &#10003; {{ trans('double-entry::general.assets_equal_liabilities_equity') }}
                             @else

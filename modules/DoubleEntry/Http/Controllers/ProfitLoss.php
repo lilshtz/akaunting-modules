@@ -5,7 +5,9 @@ namespace Modules\DoubleEntry\Http\Controllers;
 use App\Abstracts\Http\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Carbon;
 use Modules\DoubleEntry\Models\Account;
+use Modules\DoubleEntry\Models\JournalLine;
 use Modules\DoubleEntry\Services\AccountBalanceService;
 
 class ProfitLoss extends Controller
@@ -24,18 +26,25 @@ class ProfitLoss extends Controller
         $dateTo = $request->get('date_to', now()->toDateString());
         $basis = $request->get('basis', 'accrual');
         $comparative = $request->boolean('comparative', false);
+        $breakdown = $request->get('breakdown', 'none'); // none, monthly, quarterly, annual
 
         $data = $this->buildProfitLoss($companyId, $dateFrom, $dateTo, $basis);
 
         $priorData = null;
         if ($comparative) {
-            $priorFrom = now()->parse($dateFrom)->subYear()->toDateString();
-            $priorTo = now()->parse($dateTo)->subYear()->toDateString();
+            $priorFrom = Carbon::parse($dateFrom)->subYear()->toDateString();
+            $priorTo = Carbon::parse($dateTo)->subYear()->toDateString();
             $priorData = $this->buildProfitLoss($companyId, $priorFrom, $priorTo, $basis);
         }
 
+        // Build period breakdown columns
+        $periods = [];
+        if ($breakdown !== 'none') {
+            $periods = $this->buildPeriodBreakdown($companyId, $dateFrom, $dateTo, $basis, $breakdown);
+        }
+
         return $this->response('double-entry::profit-loss.index', compact(
-            'data', 'priorData', 'dateFrom', 'dateTo', 'basis', 'comparative'
+            'data', 'priorData', 'dateFrom', 'dateTo', 'basis', 'comparative', 'breakdown', 'periods'
         ));
     }
 
@@ -46,12 +55,18 @@ class ProfitLoss extends Controller
         $dateTo = $request->get('date_to', now()->toDateString());
         $basis = $request->get('basis', 'accrual');
         $format = $request->get('format', 'csv');
+        $comparative = $request->boolean('comparative', false);
 
         $data = $this->buildProfitLoss($companyId, $dateFrom, $dateTo, $basis);
 
+        $priorData = null;
+        if ($comparative) {
+            $priorFrom = Carbon::parse($dateFrom)->subYear()->toDateString();
+            $priorTo = Carbon::parse($dateTo)->subYear()->toDateString();
+            $priorData = $this->buildProfitLoss($companyId, $priorFrom, $priorTo, $basis);
+        }
+
         if ($format === 'pdf') {
-            $comparative = false;
-            $priorData = null;
             $pdf = app('dompdf.wrapper');
             $pdf->loadView('double-entry::profit-loss.pdf', compact('data', 'priorData', 'dateFrom', 'dateTo', 'basis', 'comparative'));
 
@@ -64,32 +79,53 @@ class ProfitLoss extends Controller
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ];
 
-        $callback = function () use ($data) {
+        $callback = function () use ($data, $priorData, $comparative) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Account Code', 'Account Name', 'Amount', '% of Income']);
+
+            $header = ['Account Code', 'Account Name', 'Amount', '% of Income'];
+            if ($comparative && $priorData) {
+                array_splice($header, 3, 0, ['Prior Period']);
+            }
+            fputcsv($handle, $header);
 
             fputcsv($handle, ['', 'INCOME', '', '']);
             foreach ($data['income'] as $row) {
-                fputcsv($handle, [
+                $line = [
                     $row['account']->code,
                     $row['account']->name,
                     number_format($row['balance'], 2),
-                    $data['total_income'] > 0 ? number_format(($row['balance'] / $data['total_income']) * 100, 1) . '%' : '0%',
-                ]);
+                ];
+                if ($comparative && $priorData) {
+                    $priorRow = collect($priorData['income'])->firstWhere('account.id', $row['account']->id);
+                    $line[] = $priorRow ? number_format($priorRow['balance'], 2) : '-';
+                }
+                $line[] = $data['total_income'] > 0 ? number_format(($row['balance'] / $data['total_income']) * 100, 1) . '%' : '0%';
+                fputcsv($handle, $line);
             }
             fputcsv($handle, ['', 'Total Income', number_format($data['total_income'], 2), '100%']);
 
+            // Gross Profit line if COGS exists
+            if ($data['has_cogs']) {
+                fputcsv($handle, ['', 'Cost of Goods Sold', number_format($data['total_cogs'], 2), '']);
+                fputcsv($handle, ['', 'Gross Profit', number_format($data['gross_profit'], 2), '']);
+            }
+
             fputcsv($handle, ['', 'EXPENSES', '', '']);
             foreach ($data['expenses'] as $row) {
-                fputcsv($handle, [
+                $line = [
                     $row['account']->code,
                     $row['account']->name,
                     number_format($row['balance'], 2),
-                    $data['total_income'] > 0 ? number_format(($row['balance'] / $data['total_income']) * 100, 1) . '%' : '0%',
-                ]);
+                ];
+                if ($comparative && $priorData) {
+                    $priorRow = collect($priorData['expenses'])->firstWhere('account.id', $row['account']->id);
+                    $line[] = $priorRow ? number_format($priorRow['balance'], 2) : '-';
+                }
+                $line[] = $data['total_income'] > 0 ? number_format(($row['balance'] / $data['total_income']) * 100, 1) . '%' : '0%';
+                fputcsv($handle, $line);
             }
             fputcsv($handle, ['', 'Total Expenses', number_format($data['total_expenses'], 2), '']);
-            fputcsv($handle, ['', 'Net Income', number_format($data['net_income'], 2), '']);
+            fputcsv($handle, ['', $data['net_income'] >= 0 ? 'Net Profit' : 'Net Loss', number_format($data['net_income'], 2), '']);
 
             fclose($handle);
         };
@@ -122,26 +158,105 @@ class ProfitLoss extends Controller
             }
         }
 
+        // Detect COGS accounts (accounts with "cost of goods" or "cogs" in name)
+        $cogs = [];
+        $totalCogs = 0;
         $expenses = [];
         $totalExpenses = 0;
 
         foreach ($expenseAccounts as $account) {
             $balance = $this->getAccountPeriodBalance($account, $dateFrom, $dateTo, $basis);
-            if (abs($balance) >= 0.005) {
+            if (abs($balance) < 0.005) {
+                continue;
+            }
+
+            $isCogs = preg_match('/\b(cogs|cost of (goods|sales))\b/i', $account->name);
+            if ($isCogs) {
+                $cogs[] = ['account' => $account, 'balance' => $balance];
+                $totalCogs += $balance;
+            } else {
                 $expenses[] = ['account' => $account, 'balance' => $balance];
                 $totalExpenses += $balance;
             }
         }
 
-        $netIncome = $totalIncome - $totalExpenses;
+        $hasCogs = !empty($cogs);
+        $grossProfit = $totalIncome - $totalCogs;
+        $netIncome = $totalIncome - $totalCogs - $totalExpenses;
 
         return [
             'income' => $income,
+            'cogs' => $cogs,
             'expenses' => $expenses,
             'total_income' => $totalIncome,
+            'total_cogs' => $totalCogs,
+            'has_cogs' => $hasCogs,
+            'gross_profit' => $grossProfit,
             'total_expenses' => $totalExpenses,
             'net_income' => $netIncome,
         ];
+    }
+
+    /**
+     * Build period breakdown data (monthly, quarterly, or annual).
+     */
+    protected function buildPeriodBreakdown(int $companyId, string $dateFrom, string $dateTo, string $basis, string $breakdown): array
+    {
+        $periods = [];
+        $start = Carbon::parse($dateFrom);
+        $end = Carbon::parse($dateTo);
+
+        $intervals = [];
+        $cursor = $start->copy();
+
+        while ($cursor->lte($end)) {
+            switch ($breakdown) {
+                case 'monthly':
+                    $periodStart = $cursor->copy()->startOfMonth();
+                    $periodEnd = $cursor->copy()->endOfMonth();
+                    $label = $cursor->format('M Y');
+                    $cursor->addMonth();
+                    break;
+                case 'quarterly':
+                    $periodStart = $cursor->copy()->firstOfQuarter();
+                    $periodEnd = $cursor->copy()->lastOfQuarter();
+                    $label = 'Q' . $cursor->quarter . ' ' . $cursor->year;
+                    $cursor->addQuarter();
+                    break;
+                case 'annual':
+                    $periodStart = $cursor->copy()->startOfYear();
+                    $periodEnd = $cursor->copy()->endOfYear();
+                    $label = $cursor->format('Y');
+                    $cursor->addYear();
+                    break;
+                default:
+                    return [];
+            }
+
+            // Clamp to the report's date range
+            if ($periodStart->lt($start)) {
+                $periodStart = $start->copy();
+            }
+            if ($periodEnd->gt($end)) {
+                $periodEnd = $end->copy();
+            }
+
+            $intervals[] = [
+                'label' => $label,
+                'from' => $periodStart->toDateString(),
+                'to' => $periodEnd->toDateString(),
+            ];
+        }
+
+        // Build P&L for each period
+        foreach ($intervals as $interval) {
+            $periods[] = [
+                'label' => $interval['label'],
+                'data' => $this->buildProfitLoss($companyId, $interval['from'], $interval['to'], $basis),
+            ];
+        }
+
+        return $periods;
     }
 
     /**
@@ -149,9 +264,7 @@ class ProfitLoss extends Controller
      */
     protected function getAccountPeriodBalance(Account $account, string $dateFrom, string $dateTo, string $basis): float
     {
-        $query = $account->id;
-
-        $totals = \Modules\DoubleEntry\Models\JournalLine::where('account_id', $account->id)
+        $totals = JournalLine::where('account_id', $account->id)
             ->join('double_entry_journals', 'double_entry_journals.id', '=', 'double_entry_journal_lines.journal_id')
             ->where('double_entry_journals.company_id', $account->company_id)
             ->where('double_entry_journals.status', 'posted')
