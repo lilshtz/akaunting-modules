@@ -15,6 +15,24 @@ Route::admin('bank-feeds', function () {
     Route::post('transactions/{id}/ignore', 'Transactions@ignore')->name('transactions.ignore');
     Route::post('transactions/bulk-categorize', 'Transactions@bulkCategorize')->name('transactions.bulk-categorize');
 
+    // Matching
+    Route::get('matching', 'Matching@index')->name('matching.index');
+    Route::get('matching/{id}', 'Matching@show')->name('matching.show');
+    Route::post('matching/{id}/accept', 'Matching@acceptMatch')->name('matching.accept');
+    Route::post('matching/{id}/reject', 'Matching@rejectMatch')->name('matching.reject');
+    Route::post('matching/{id}/create-transaction', 'Matching@createTransaction')->name('matching.create-transaction');
+    Route::post('matching/auto-match', 'Matching@autoMatchAll')->name('matching.auto-match');
+    Route::post('matching/bulk-ignore', 'Matching@bulkIgnore')->name('matching.bulk-ignore');
+
+    // Reconciliation
+    Route::get('reconciliation', 'Reconciliation@index')->name('reconciliation.index');
+    Route::post('reconciliation', 'Reconciliation@create')->name('reconciliation.create');
+    Route::get('reconciliation/{id}', 'Reconciliation@show')->name('reconciliation.show');
+    Route::post('reconciliation/{id}/match', 'Reconciliation@matchTransaction')->name('reconciliation.match');
+    Route::post('reconciliation/{id}/unmatch', 'Reconciliation@unmatchTransaction')->name('reconciliation.unmatch');
+    Route::post('reconciliation/{id}/complete', 'Reconciliation@complete')->name('reconciliation.complete');
+    Route::delete('reconciliation/{id}', 'Reconciliation@destroy')->name('reconciliation.destroy');
+
     // Rules
     Route::get('rules', 'Rules@index')->name('rules.index');
     Route::get('rules/create', 'Rules@create')->name('rules.create');

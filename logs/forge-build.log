@@ -154,3 +154,23 @@ Committed successfully. The Receipts module is complete with all 26 files:
 To https://github.com/lilshtz/akaunting-modules.git
    150c535..24b48aa  master -> master
 [Thu Mar 26 03:33:54 PM UTC 2026] Starting 11-bank-feeds-csv
+Done. The Bank Feeds module has been built and committed with 33 files across all required components:
+
+**Database** — Migration with 3 tables: `bank_feed_imports`, `bank_feed_rules`, `bank_feed_transactions` with all specified columns, enums, and indexes.
+
+**Models** — `BankFeedImport`, `BankFeedRule` (with `matches()` logic for all 6 operators), `BankFeedTransaction`.
+
+**Services:**
+- **CsvImportService** — CSV preview, column mapping, multi-format date parsing, amount parsing (handles currency symbols, parentheses), presets for BoA/Chase/generic
+- **OfxImportService** — Parses both XML-style and SGML-style OFX/QFX, extracts STMTTRN blocks, handles OFX date format
+- **CategorizationService** — Applies rules in priority order, supports single/bulk/import-level categorization
+
+**Controllers** — `Imports` (upload, column mapping, OFX auto-process), `Transactions` (list, filter, ignore, bulk categorize), `Rules` (CRUD + reorder), `Settings` (saved mappings), `Api\BankFeeds`.
+
+**Views** — Import upload, column mapping UI with presets and preview table, transaction list with filters, rules CRUD, settings page, widget.
+
+**Sidebar** — "Bank Feeds" dropdown under Banking section (position 35) with Transactions, Import History, Import File, Rules, and Settings.
+[Thu Mar 26 03:41:10 PM UTC 2026] Task 11-bank-feeds-csv exit: 0
+To https://github.com/lilshtz/akaunting-modules.git
+   24b48aa..46c6a57  master -> master
+[Thu Mar 26 03:41:16 PM UTC 2026] Starting 12-bank-feeds-matching

@@ -9,21 +9,29 @@ use Modules\BankFeeds\Models\BankFeedImport;
 use Modules\BankFeeds\Services\CsvImportService;
 use Modules\BankFeeds\Services\OfxImportService;
 use Modules\BankFeeds\Services\CategorizationService;
+use Modules\BankFeeds\Services\DuplicateDetector;
+use Modules\BankFeeds\Services\TransactionMatcher;
 
 class Imports extends Controller
 {
     protected CsvImportService $csvService;
     protected OfxImportService $ofxService;
     protected CategorizationService $categorizationService;
+    protected DuplicateDetector $duplicateDetector;
+    protected TransactionMatcher $matcher;
 
     public function __construct(
         CsvImportService $csvService,
         OfxImportService $ofxService,
-        CategorizationService $categorizationService
+        CategorizationService $categorizationService,
+        DuplicateDetector $duplicateDetector,
+        TransactionMatcher $matcher
     ) {
         $this->csvService = $csvService;
         $this->ofxService = $ofxService;
         $this->categorizationService = $categorizationService;
+        $this->duplicateDetector = $duplicateDetector;
+        $this->matcher = $matcher;
     }
 
     public function index()
@@ -121,16 +129,32 @@ class Imports extends Controller
                 'imported_at' => now(),
             ]);
 
+            // Detect duplicates
+            $duplicates = $this->duplicateDetector->detectDuplicates($import->id);
+
             // Auto-categorize
             $categorized = $this->categorizationService->categorizeImport($import->id, company_id());
+
+            // Auto-match high-confidence transactions
+            $matched = $this->matcher->autoMatch(company_id());
 
             // Clean up uploaded file
             Storage::disk('public')->delete($path);
 
-            flash(trans('bank-feeds::general.messages.import_success', [
+            $message = trans('bank-feeds::general.messages.import_success', [
                 'count' => $rowCount,
                 'categorized' => $categorized,
-            ]))->success();
+            ]);
+
+            if ($duplicates > 0) {
+                $message .= ' ' . trans('bank-feeds::general.messages.duplicates_found', ['count' => $duplicates]);
+            }
+
+            if ($matched > 0) {
+                $message .= ' ' . trans('bank-feeds::general.messages.auto_matched', ['count' => $matched]);
+            }
+
+            flash($message)->success();
         } catch (\Exception $e) {
             $import->update(['status' => BankFeedImport::STATUS_FAILED]);
             Storage::disk('public')->delete($path);
@@ -159,15 +183,31 @@ class Imports extends Controller
                 'imported_at' => now(),
             ]);
 
+            // Detect duplicates
+            $duplicates = $this->duplicateDetector->detectDuplicates($import->id);
+
             // Auto-categorize
             $categorized = $this->categorizationService->categorizeImport($import->id, company_id());
 
+            // Auto-match high-confidence transactions
+            $matched = $this->matcher->autoMatch(company_id());
+
             Storage::disk('public')->delete($path);
 
-            flash(trans('bank-feeds::general.messages.import_success', [
+            $message = trans('bank-feeds::general.messages.import_success', [
                 'count' => $rowCount,
                 'categorized' => $categorized,
-            ]))->success();
+            ]);
+
+            if ($duplicates > 0) {
+                $message .= ' ' . trans('bank-feeds::general.messages.duplicates_found', ['count' => $duplicates]);
+            }
+
+            if ($matched > 0) {
+                $message .= ' ' . trans('bank-feeds::general.messages.auto_matched', ['count' => $matched]);
+            }
+
+            flash($message)->success();
         } catch (\Exception $e) {
             $import->update(['status' => BankFeedImport::STATUS_FAILED]);
             Storage::disk('public')->delete($path);

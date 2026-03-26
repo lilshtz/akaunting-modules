@@ -21,6 +21,44 @@ return [
     'bulk_categorize' => 'Bulk Categorize',
     'reprocess' => 'Re-process',
     'save_mapping' => 'Save mapping for this account',
+    'reconciliation' => 'Reconciliation',
+    'reconciliations' => 'Reconciliations',
+
+    'matching' => [
+        'name' => 'Transaction Matching',
+        'find_match' => 'Find Match',
+        'accept_match' => 'Accept Match',
+        'reject_match' => 'Reject Match',
+        'create_new' => 'Create New Transaction',
+        'auto_match_all' => 'Auto-Match All',
+        'bulk_ignore' => 'Ignore Selected',
+        'confidence' => 'Confidence',
+        'suggested_matches' => 'Suggested Matches',
+        'no_suggestions' => 'No matching transactions found.',
+        'match_reasons' => 'Match Reasons',
+        'imported_transaction' => 'Imported Transaction',
+        'existing_transaction' => 'Existing Transaction',
+        'high_confidence' => 'High',
+        'medium_confidence' => 'Medium',
+        'low_confidence' => 'Low',
+        'duplicate_warning' => 'Possible Duplicate',
+    ],
+
+    'reconciliation_fields' => [
+        'bank_account' => 'Bank Account',
+        'statement_period' => 'Statement Period',
+        'start_date' => 'Start Date',
+        'end_date' => 'End Date',
+        'opening_balance' => 'Opening Balance',
+        'closing_balance' => 'Closing Balance',
+        'reconciled_balance' => 'Reconciled Balance',
+        'difference' => 'Difference',
+        'matched_deposits' => 'Matched Deposits',
+        'matched_withdrawals' => 'Matched Withdrawals',
+        'matched_count' => 'Matched',
+        'unmatched_count' => 'Unmatched',
+        'total_transactions' => 'Total Transactions',
+    ],
 
     'fields' => [
         'bank_account' => 'Bank Account',
@@ -53,6 +91,8 @@ return [
         'categorized' => 'Categorized',
         'matched' => 'Matched',
         'ignored' => 'Ignored',
+        'in_progress' => 'In Progress',
+        'completed' => 'Completed',
     ],
 
     'types' => [
@@ -97,6 +137,13 @@ return [
         'no_file' => 'Please select a file to import.',
         'mapping_saved' => 'Column mapping saved for this account.',
         'mapping_deleted' => 'Column mapping deleted.',
+        'match_accepted' => 'Transaction match accepted.',
+        'match_rejected' => 'Transaction match removed.',
+        'transaction_created' => 'New transaction created and matched.',
+        'auto_matched' => ':count transaction(s) auto-matched.',
+        'bulk_ignored' => ':count transaction(s) marked as ignored.',
+        'reconciliation_completed' => 'Reconciliation completed successfully.',
+        'duplicates_found' => ':count potential duplicate(s) detected.',
     ],
 
     'help' => [
@@ -105,5 +152,7 @@ return [
         'column_mapping' => 'Map the columns in your CSV to the correct transaction fields.',
         'rules' => 'Rules are applied in priority order. The first matching rule assigns the category and/or vendor.',
         'between_value' => 'For "between" operator, enter two values separated by comma (e.g., 100,500).',
+        'reconciliation' => 'Match imported bank transactions to your accounting records. Difference should be $0 when complete.',
+        'matching' => 'Review imported transactions and match them to existing invoices, bills, or payments.',
     ],
 ];

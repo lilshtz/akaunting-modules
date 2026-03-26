@@ -15,6 +15,12 @@ class AddAdminMenu
             $sub->route('bank-feeds.transactions.index', trans('bank-feeds::general.transactions'), [], 10, [
                 'icon' => 'list',
             ]);
+            $sub->route('bank-feeds.matching.index', trans('bank-feeds::general.matching.name'), [], 15, [
+                'icon' => 'compare_arrows',
+            ]);
+            $sub->route('bank-feeds.reconciliation.index', trans('bank-feeds::general.reconciliation'), [], 18, [
+                'icon' => 'fact_check',
+            ]);
             $sub->route('bank-feeds.imports.index', trans('bank-feeds::general.import_history'), [], 20, [
                 'icon' => 'history',
             ]);
