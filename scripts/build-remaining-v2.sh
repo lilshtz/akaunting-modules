@@ -5,8 +5,6 @@ LOG=logs/forge-build-codex-v2.log
 mkdir -p logs
 
 TASKS=(
-  "13-stripe-gateway"
-  "14-paypal-sync"
   "15-projects-milestones"
   "16-projects-time-budget"
   "17-expense-claims"
