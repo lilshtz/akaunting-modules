@@ -261,3 +261,20 @@ You've hit your limit · resets 6pm (UTC)
 [Thu Mar 26 03:52:43 PM UTC 2026] Task 28-auto-schedule-reports exit: 1
 Everything up-to-date
 [Thu Mar 26 03:52:48 PM UTC 2026] All tasks complete
+Both modules are built, committed, and pushed. Here's a summary:
+
+## Stripe Module (25 files)
+- **Database**: `stripe_settings` (encrypted API keys, test mode) + `stripe_payments` (tracks payment intents, charges, sessions)
+- **Payment flow**: Extends `PaymentController`, creates Stripe Checkout Sessions via REST API (no SDK), redirects to Stripe-hosted page
+- **Webhook**: Validates HMAC-SHA256 signatures, handles `checkout.session.completed`, `payment_intent.succeeded`, `charge.refunded` events
+- **Refunds**: Admin can refund via Stripe API from payment history
+- **Service**: `StripeService` uses curl directly, handles zero-decimal currencies, webhook signature verification with 5-min tolerance
+- **Listeners**: Registers as payment method, settings menu, permissions
+
+## PaypalSync Module (19 files)
+- **Database**: `paypal_sync_settings` (encrypted credentials, sandbox/live mode, target bank account) + `paypal_sync_transactions` (imported transactions with raw JSON)
+- **Sync**: Fetches from PayPal Transaction Search API v1, deduplicates, creates Akaunting bank transactions
+- **Matching**: Auto-matches PayPal payments to invoices by amount + payer email
+- **Service**: `PaypalService` uses curl with OAuth2 token caching; `TransactionSyncService` orchestrates sync with pagination
+- **CLI**: `paypal-sync:sync` artisan command for daily cron scheduling
+- **Listeners**: Settings menu, permissions, landing page
