@@ -1,0 +1,20 @@
+{
+    "alias": "credit-debit-notes",
+    "icon": "note_add",
+    "version": "1.0.0",
+    "active": 1,
+    "providers": [
+        "Modules\\CreditDebitNotes\\Providers\\Event",
+        "Modules\\CreditDebitNotes\\Providers\\Main"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": ["double-entry"],
+    "reports": [],
+    "widgets": [
+        "Modules\\CreditDebitNotes\\Widgets\\CreditDebitNoteSummary"
+    ],
+    "settings": [],
+    "extra-modules": {},
+    "routes": {}
+}

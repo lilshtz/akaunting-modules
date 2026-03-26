@@ -1,0 +1,11 @@
+{
+    "name": "akaunting/credit-debit-notes",
+    "description": "Credit and debit notes with refund tracking, credit application, and journal posting for Akaunting",
+    "type": "akaunting-module",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Modules\\CreditDebitNotes\\": ""
+        }
+    }
+}

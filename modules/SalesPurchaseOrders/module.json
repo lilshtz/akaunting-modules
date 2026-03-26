@@ -1,0 +1,21 @@
+{
+    "alias": "sales-purchase-orders",
+    "icon": "shopping_cart",
+    "version": "1.0.0",
+    "active": 1,
+    "providers": [
+        "Modules\\SalesPurchaseOrders\\Providers\\Event",
+        "Modules\\SalesPurchaseOrders\\Providers\\Main"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "reports": [],
+    "widgets": [
+        "Modules\\SalesPurchaseOrders\\Widgets\\SalesOrderSummary",
+        "Modules\\SalesPurchaseOrders\\Widgets\\PurchaseOrderSummary"
+    ],
+    "settings": [],
+    "extra-modules": {},
+    "routes": {}
+}

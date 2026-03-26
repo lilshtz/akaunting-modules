@@ -1,0 +1,11 @@
+{
+    "name": "akaunting/sales-purchase-orders",
+    "description": "Sales and Purchase Orders module with invoice/bill conversion for Akaunting",
+    "type": "akaunting-module",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Modules\\SalesPurchaseOrders\\": ""
+        }
+    }
+}

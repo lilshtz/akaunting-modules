@@ -103,3 +103,34 @@ I added the missing `composer.json` and committed with the specified message.
 To https://github.com/lilshtz/akaunting-modules.git
    ac98918..3e0729b  master -> master
 [Thu Mar 26 02:56:21 PM UTC 2026] Starting 07-estimates
+Done. The Estimates module has been built with 28 files (3,029 lines) covering:
+
+**Module scaffold**: `module.json`, `composer.json`, service providers (Main + Event)
+
+**Database**: Migration for `estimate_settings`, `estimate_histories`, `estimate_portal_tokens` tables. Estimates use the core `documents` table with `type='estimate'`.
+
+**Models**: `Estimate` (extends Document with global scope), `EstimateSetting`, `EstimateHistory`, `EstimatePortalToken`
+
+**Controller (Estimates)**: Full CRUD + `send`, `approve`, `refuse`, `convert` (to invoice), `duplicate`, `pdf`, `settings` — with line item saving, tax/discount calculation, and document total computation
+
+**Controller (Portal)**: Public token-based access — view tracking, approve/refuse with optional reason
+
+**Notifications**: `EstimateSent` (email to customer with portal link), `EstimateStatusChanged` (email + database notification to company owner)
+
+**Views**: Index with filters, create/edit with dynamic line items (JS add/remove), show with timeline, PDF template, portal view with approve/refuse buttons, settings page, dashboard widget
+
+**Routes**: Admin routes for CRUD + actions, public portal routes (no auth)
+
+**Sidebar**: "Estimates" with `request_quote` icon
+
+**Widget**: `EstimateSummary` with approval rate, conversion rate, status breakdown, recent estimates
+[Thu Mar 26 03:05:35 PM UTC 2026] Task 07-estimates exit: 0
+To https://github.com/lilshtz/akaunting-modules.git
+   3e0729b..150c535  master -> master
+[Thu Mar 26 03:05:41 PM UTC 2026] Starting 08-credit-debit-notes
+[Thu Mar 26 03:15:41 PM UTC 2026] Task 08-credit-debit-notes exit: 124
+Everything up-to-date
+[Thu Mar 26 03:15:46 PM UTC 2026] Starting 09-sales-purchase-orders
+[Thu Mar 26 03:25:46 PM UTC 2026] Task 09-sales-purchase-orders exit: 124
+Everything up-to-date
+[Thu Mar 26 03:25:52 PM UTC 2026] Starting 10-receipts-ocr

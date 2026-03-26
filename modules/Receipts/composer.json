@@ -1,0 +1,11 @@
+{
+    "name": "akaunting/receipts",
+    "description": "Receipts module with OCR for Akaunting",
+    "type": "akaunting-module",
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Modules\\Receipts\\": ""
+        }
+    }
+}
