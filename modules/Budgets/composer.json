@@ -1,0 +1,11 @@
+{
+    "name": "akaunting/budgets",
+    "description": "Budgets module with account planning, variance tracking, and reporting for Akaunting",
+    "type": "akaunting-module",
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Modules\\Budgets\\": ""
+        }
+    }
+}

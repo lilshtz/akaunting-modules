@@ -1,0 +1,22 @@
+{
+    "alias": "budgets",
+    "icon": "account_balance_wallet",
+    "version": "1.0.0",
+    "active": 1,
+    "providers": [
+        "Modules\\Budgets\\Providers\\Event",
+        "Modules\\Budgets\\Providers\\Main"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [
+        "double-entry"
+    ],
+    "reports": [],
+    "widgets": [
+        "Modules\\Budgets\\Widgets\\BudgetSummary"
+    ],
+    "settings": [],
+    "extra-modules": {},
+    "routes": {}
+}
