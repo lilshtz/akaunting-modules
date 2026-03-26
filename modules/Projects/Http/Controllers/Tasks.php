@@ -13,6 +13,7 @@ use Modules\Projects\Http\Requests\TaskUpdate;
 use Modules\Projects\Models\Project;
 use Modules\Projects\Models\ProjectActivity;
 use Modules\Projects\Models\ProjectTask;
+use Modules\Projects\Models\ProjectTimesheet;
 
 class Tasks extends Controller
 {
@@ -51,11 +52,17 @@ class Tasks extends Controller
     {
         $task = ProjectTask::with(['project', 'milestone', 'assignee'])->findOrFail($id);
         $project = $this->findProject($task->project_id);
+        $currentTimer = ProjectTimesheet::where('task_id', $task->id)
+            ->where('user_id', auth()->id())
+            ->running()
+            ->latest('started_at')
+            ->first();
 
         return view('projects::tasks.edit', array_merge(
             [
                 'project' => $project,
                 'task' => $task,
+                'currentTimer' => $currentTimer,
             ],
             $this->formData($project)
         ));

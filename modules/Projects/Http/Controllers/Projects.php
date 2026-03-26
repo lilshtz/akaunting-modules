@@ -16,6 +16,8 @@ use Modules\Projects\Models\Project;
 use Modules\Projects\Models\ProjectActivity;
 use Modules\Projects\Models\ProjectMember;
 use Modules\Projects\Models\ProjectTransaction;
+use Modules\Projects\Models\ProjectTimesheet;
+use Modules\Projects\Services\ProjectReportService;
 
 class Projects extends Controller
 {
@@ -83,21 +85,28 @@ class Projects extends Controller
         return redirect()->route('projects.projects.show', $project->id);
     }
 
-    public function show(Request $request, int $id): Response|mixed
+    public function show(Request $request, int $id, ProjectReportService $reportService): Response|mixed
     {
         $project = $this->findProject($id, [
             'contact',
             'members.user',
             'milestones.tasks.assignee',
-            'tasks.assignee',
-            'tasks.milestone',
             'transactions.document',
             'discussions.user',
             'discussions.replies.user',
             'activities.user',
         ]);
 
+        $project->load([
+            'tasks' => function ($query) {
+                $query->with(['assignee', 'milestone'])
+                    ->withSum('timesheets', 'hours')
+                    ->orderBy('position');
+            },
+        ]);
+
         $tab = $request->get('tab', 'overview');
+        $report = $reportService->build($project);
 
         $taskColumns = [
             'todo' => $project->tasks->where('status', 'todo'),
@@ -105,6 +114,20 @@ class Projects extends Controller
             'review' => $project->tasks->where('status', 'review'),
             'done' => $project->tasks->where('status', 'done'),
         ];
+
+        $timesheets = $project->timesheets()
+            ->with(['task', 'user'])
+            ->latest('started_at')
+            ->get();
+
+        $activeTimers = ProjectTimesheet::with(['task', 'user'])
+            ->running()
+            ->whereHas('task.project', fn ($query) => $query->where('id', $project->id)->where('company_id', company_id()))
+            ->latest('started_at')
+            ->get();
+
+        $activeTimerMap = $activeTimers->keyBy('task_id');
+        $currentUserActiveTimer = $activeTimers->firstWhere('user_id', auth()->id());
 
         $transactionSummary = [
             'invoice_count' => $project->transactions->where('document_type', 'invoice')->count(),
@@ -119,6 +142,11 @@ class Projects extends Controller
                 'tab' => $tab,
                 'taskColumns' => $taskColumns,
                 'transactionSummary' => $transactionSummary,
+                'timesheets' => $timesheets,
+                'activeTimers' => $activeTimers,
+                'activeTimerMap' => $activeTimerMap,
+                'currentUserActiveTimer' => $currentUserActiveTimer,
+                'report' => $report,
             ],
             $this->formData($project),
             $this->nestedFormData($project)

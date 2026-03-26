@@ -50,6 +50,11 @@ class ProjectTask extends Model
         return $this->belongsTo(Employee::class, 'assignee_id');
     }
 
+    public function timesheets()
+    {
+        return $this->hasMany(ProjectTimesheet::class, 'task_id');
+    }
+
     public function getStatusLabelAttribute(): string
     {
         return trans('projects::general.task_statuses.' . $this->status);

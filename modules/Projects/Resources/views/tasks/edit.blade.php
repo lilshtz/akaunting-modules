@@ -4,6 +4,33 @@
     </x-slot>
 
     <x-slot name="content">
+        <div class="mb-6 rounded-2xl bg-white p-6 shadow-sm">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-900">{{ trans('projects::general.running_timer') }}</h3>
+                    <p class="mt-1 text-sm text-gray-500">
+                        @if ($currentTimer)
+                            {{ $currentTimer->started_at?->format('M d, Y H:i') }} · {{ number_format($currentTimer->tracked_hours, 2) }}h
+                        @else
+                            {{ trans('projects::general.empty_state') }}
+                        @endif
+                    </p>
+                </div>
+
+                @if ($currentTimer)
+                    <form method="POST" action="{{ route('projects.projects.tasks.timer.stop', [$project->id, $task->id]) }}">
+                        @csrf
+                        <button type="submit" class="rounded-lg bg-rose-600 px-4 py-2 text-sm text-white">{{ trans('projects::general.stop_timer') }}</button>
+                    </form>
+                @else
+                    <form method="POST" action="{{ route('projects.projects.tasks.timer.start', [$project->id, $task->id]) }}">
+                        @csrf
+                        <button type="submit" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm text-white">{{ trans('projects::general.start_timer') }}</button>
+                    </form>
+                @endif
+            </div>
+        </div>
+
         <form method="POST" action="{{ route('projects.tasks.update', $task->id) }}" class="rounded-2xl bg-white p-6 shadow-sm">
             @csrf
             @method('PUT')

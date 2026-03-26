@@ -68,6 +68,11 @@ class Project extends Model
         return $this->hasMany(ProjectTask::class, 'project_id')->orderBy('position');
     }
 
+    public function timesheets()
+    {
+        return $this->hasManyThrough(ProjectTimesheet::class, ProjectTask::class, 'project_id', 'task_id', 'id', 'id');
+    }
+
     public function members()
     {
         return $this->hasMany(ProjectMember::class, 'project_id');

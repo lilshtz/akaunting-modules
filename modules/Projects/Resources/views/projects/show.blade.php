@@ -63,8 +63,37 @@
                                 <div class="text-sm text-amber-700">{{ trans('projects::general.transactions') }}</div>
                                 <div class="mt-1 text-2xl font-semibold text-amber-900">{{ $project->transactions->count() }}</div>
                             </div>
+                            <div class="rounded-2xl bg-rose-50 p-4">
+                                <div class="text-sm text-rose-700">{{ trans('projects::general.timesheets') }}</div>
+                                <div class="mt-1 text-2xl font-semibold text-rose-900">{{ $timesheets->count() }}</div>
+                            </div>
+                            <div class="rounded-2xl bg-violet-50 p-4">
+                                <div class="text-sm text-violet-700">{{ trans('projects::general.tracked_hours') }}</div>
+                                <div class="mt-1 text-2xl font-semibold text-violet-900">{{ number_format($report['summary']['tracked_hours'], 2) }}h</div>
+                            </div>
+                            <div class="rounded-2xl bg-cyan-50 p-4">
+                                <div class="text-sm text-cyan-700">{{ trans('projects::general.profit') }}</div>
+                                <div class="mt-1 text-2xl font-semibold text-cyan-900">{{ money($report['summary']['profit'], setting('default.currency', 'USD')) }}</div>
+                            </div>
                         </div>
                     </div>
+
+                    @if ($activeTimers->isNotEmpty())
+                        <div class="rounded-2xl bg-white p-6 shadow-sm">
+                            <h3 class="text-lg font-semibold text-slate-900">{{ trans('projects::general.running_timers') }}</h3>
+                            <div class="mt-4 space-y-3">
+                                @foreach ($activeTimers as $timer)
+                                    <div class="flex flex-col gap-2 rounded-xl border border-emerald-100 bg-emerald-50 p-4 md:flex-row md:items-center md:justify-between">
+                                        <div>
+                                            <div class="font-medium text-emerald-900">{{ $timer->task?->name ?? trans('projects::general.task') }}</div>
+                                            <div class="text-sm text-emerald-700">{{ $timer->user?->name ?? trans('general.na') }} · {{ $timer->started_at?->format('M d, Y H:i') }}</div>
+                                        </div>
+                                        <div class="text-sm font-semibold text-emerald-900">{{ number_format($timer->tracked_hours, 2) }}h</div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
 
                     <div class="rounded-2xl bg-white p-6 shadow-sm">
                         <h3 class="text-lg font-semibold text-slate-900">{{ trans('projects::general.timeline') }}</h3>
@@ -126,6 +155,10 @@
                             <div class="flex items-center justify-between">
                                 <span class="text-gray-500">{{ trans('projects::general.bill_total') }}</span>
                                 <span class="font-medium">{{ money($transactionSummary['bill_total'], setting('default.currency', 'USD')) }}</span>
+                            </div>
+                            <div class="flex items-center justify-between border-t border-gray-100 pt-4">
+                                <span class="text-gray-500">{{ trans('projects::general.actual_costs') }}</span>
+                                <span class="font-medium">{{ money($report['summary']['costs'], setting('default.currency', 'USD')) }}</span>
                             </div>
                         </div>
                     </div>
@@ -192,8 +225,29 @@
                                         <span>{{ $task->assignee?->name ?? trans('general.na') }}</span>
                                         <span>{{ $task->estimated_hours ? number_format($task->estimated_hours, 2) . 'h' : '-' }}</span>
                                     </div>
+                                    <div class="mt-2 text-xs text-gray-500">
+                                        {{ trans('projects::general.tracked_hours') }}: {{ number_format((float) ($task->timesheets_sum_hours ?? 0), 2) }}h
+                                    </div>
+                                    @if ($activeTimerMap->has($task->id))
+                                        <div class="mt-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
+                                            {{ trans('projects::general.running_timer') }}:
+                                            {{ $activeTimerMap[$task->id]->user?->name ?? trans('general.na') }}
+                                            · {{ number_format($activeTimerMap[$task->id]->tracked_hours, 2) }}h
+                                        </div>
+                                    @endif
                                     <div class="mt-3 flex flex-wrap gap-2">
                                         <a href="{{ route('projects.tasks.edit', $task->id) }}" class="text-xs font-medium text-blue-700 hover:underline">{{ trans('general.edit') }}</a>
+                                        @if (($activeTimerMap[$task->id]->user_id ?? null) === auth()->id())
+                                            <form method="POST" action="{{ route('projects.projects.tasks.timer.stop', [$project->id, $task->id]) }}">
+                                                @csrf
+                                                <button type="submit" class="text-xs font-medium text-rose-700 hover:underline">{{ trans('projects::general.stop_timer') }}</button>
+                                            </form>
+                                        @else
+                                            <form method="POST" action="{{ route('projects.projects.tasks.timer.start', [$project->id, $task->id]) }}">
+                                                @csrf
+                                                <button type="submit" class="text-xs font-medium text-emerald-700 hover:underline">{{ trans('projects::general.start_timer') }}</button>
+                                            </form>
+                                        @endif
                                         <form method="POST" action="{{ route('projects.projects.tasks.transition', [$project->id, $task->id]) }}">
                                             @csrf
                                             <input type="hidden" name="status" value="{{ $task->status === 'done' ? 'todo' : 'done' }}" />
@@ -270,6 +324,94 @@
                     </div>
                 </form>
             </div>
+        @elseif ($tab === 'timesheets')
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <div class="xl:col-span-2 rounded-2xl bg-white p-6 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-slate-900">{{ trans('projects::general.timesheets') }}</h3>
+                        <div class="text-sm text-gray-500">{{ number_format($report['summary']['tracked_hours'], 2) }}h</div>
+                    </div>
+                    <div class="mt-4 overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-gray-100 text-left text-gray-500">
+                                    <th class="px-3 py-2">{{ trans('projects::general.logged_by') }}</th>
+                                    <th class="px-3 py-2">{{ trans('projects::general.task') }}</th>
+                                    <th class="px-3 py-2">{{ trans('projects::general.hours') }}</th>
+                                    <th class="px-3 py-2">{{ trans('projects::general.date') }}</th>
+                                    <th class="px-3 py-2">{{ trans('projects::general.billable') }}</th>
+                                    <th class="px-3 py-2">{{ trans('general.description') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($timesheets as $timesheet)
+                                    <tr class="border-b border-gray-100">
+                                        <td class="px-3 py-3">{{ $timesheet->user?->name ?? trans('general.na') }}</td>
+                                        <td class="px-3 py-3 font-medium text-slate-900">{{ $timesheet->task?->name ?? trans('general.na') }}</td>
+                                        <td class="px-3 py-3">{{ number_format($timesheet->tracked_hours, 2) }}</td>
+                                        <td class="px-3 py-3">{{ $timesheet->started_at?->format('M d, Y') ?? '-' }}</td>
+                                        <td class="px-3 py-3">{{ $timesheet->billable ? trans('projects::general.billable') : trans('projects::general.non_billable') }}</td>
+                                        <td class="px-3 py-3 text-gray-500">{{ $timesheet->description ?: '-' }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="px-3 py-6 text-center text-gray-500">{{ trans('projects::general.empty_state') }}</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="rounded-2xl bg-white p-6 shadow-sm">
+                        <h3 class="text-lg font-semibold text-slate-900">{{ trans('projects::general.manual_timesheet_entry') }}</h3>
+                        <form method="POST" action="{{ route('projects.projects.timesheets.store', $project->id) }}" class="mt-4 space-y-4">
+                            @csrf
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">{{ trans('projects::general.task') }}</label>
+                                <select name="task_id" class="w-full rounded-lg border-gray-300 text-sm" required>
+                                    <option value="">{{ trans('general.select') }}</option>
+                                    @foreach ($project->tasks as $task)
+                                        <option value="{{ $task->id }}">{{ $task->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">{{ trans('projects::general.work_date') }}</label>
+                                <input type="date" name="work_date" value="{{ now()->toDateString() }}" class="w-full rounded-lg border-gray-300 text-sm" required />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">{{ trans('projects::general.hours') }}</label>
+                                <input type="number" name="hours" step="0.01" min="0.01" class="w-full rounded-lg border-gray-300 text-sm" required />
+                            </div>
+                            <label class="flex items-center gap-3 rounded-lg border border-gray-100 px-3 py-2 text-sm text-gray-700">
+                                <input type="checkbox" name="billable" value="1" checked />
+                                {{ trans('projects::general.billable') }}
+                            </label>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">{{ trans('general.description') }}</label>
+                                <textarea name="description" rows="3" class="w-full rounded-lg border-gray-300 text-sm"></textarea>
+                            </div>
+                            <button type="submit" class="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm text-white">{{ trans('general.save') }}</button>
+                        </form>
+                    </div>
+
+                    @if ($currentUserActiveTimer)
+                        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
+                            <h3 class="text-lg font-semibold text-emerald-900">{{ trans('projects::general.running_timer') }}</h3>
+                            <div class="mt-2 text-sm text-emerald-700">{{ $currentUserActiveTimer->task?->name ?? trans('general.na') }}</div>
+                            <div class="mt-1 text-sm text-emerald-700">{{ number_format($currentUserActiveTimer->tracked_hours, 2) }}h</div>
+                            <form method="POST" action="{{ route('projects.projects.tasks.timer.stop', [$project->id, $currentUserActiveTimer->task_id]) }}" class="mt-4">
+                                @csrf
+                                <button type="submit" class="rounded-lg bg-emerald-900 px-4 py-2 text-sm text-white">{{ trans('projects::general.stop_timer') }}</button>
+                            </form>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @elseif ($tab === 'budget')
+            @include('projects::projects.partials.financial-dashboard', ['showReportLink' => true])
         @elseif ($tab === 'milestones')
             <div class="rounded-2xl bg-white p-6 shadow-sm">
                 <div class="space-y-6">
