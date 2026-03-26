@@ -1,0 +1,20 @@
+{
+    "alias": "employees",
+    "icon": "people",
+    "version": "1.0.0",
+    "active": 1,
+    "providers": [
+        "Modules\\Employees\\Providers\\Event",
+        "Modules\\Employees\\Providers\\Main"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "reports": [],
+    "widgets": [
+        "Modules\\Employees\\Widgets\\EmployeeSummary"
+    ],
+    "settings": [],
+    "extra-modules": {},
+    "routes": {}
+}

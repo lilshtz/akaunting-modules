@@ -1,0 +1,77 @@
+[Thu Mar 26 02:31:21 PM UTC 2026] Starting 02-journal-engine
+Done. Here's what was built:
+
+**Migration:** `double_entry_journals` and `double_entry_journal_lines` tables with all specified columns including recurring fields.
+
+**Models:**
+- `Journal.php` — company scoped, soft deletes, morphTo documentable, lines relationship, computed totals/balance check
+- `JournalLine.php` — belongs to Journal and Account
+
+**Controller:** `Journals.php` — full CRUD with:
+- `index()` with date range, reference, and status filters + pagination
+- `create()/store()` with dynamic line items
+- `show()` read-only detail view
+- `edit()/update()` restricted to draft entries only
+- `destroy()` — deletes drafts, creates reversing entries for posted journals
+- `duplicate()` — copies as new draft
+
+**Validation:** `JournalStore.php` / `JournalUpdate.php` — debits must equal credits, min 2 lines, each line must have debit XOR credit, account must belong to company.
+
+**Auto-posting listeners:**
+- `DocumentCreated` — Invoice → DR AR / CR Revenue (+ CR Tax Payable); Bill → DR Expense / CR AP
+- `DocumentUpdated` — deletes old journal and re-posts
+- `TransactionCreated` — Payment received → DR Bank / CR AR; Payment made → DR AP / CR Bank
+- `TransferCreated` — DR Destination bank / CR Source bank
+
+**Recurring:** `ProcessRecurringJournals` artisan command registered in scheduler (daily).
+
+**Views:** index (sortable table + filters), create/edit (dynamic line items with running totals + balance check), show (read-only detail).
+
+**Routes:** Resource routes + duplicate POST route under `double-entry` prefix.
+[Thu Mar 26 02:37:42 PM UTC 2026] Task 02-journal-engine exit: 0
+To https://github.com/lilshtz/akaunting-modules.git
+   9677c84..cc2d4ce  master -> master
+[Thu Mar 26 02:37:48 PM UTC 2026] Starting 03-ledger-reports
+Done. Here's what was built:
+
+**Service Layer:**
+- `Services/AccountBalanceService.php` — Core balance calculator with `getBalance()`, `getBalancesByType()`, `getRunningBalance()`, and `getTrialBalance()`. Handles normal debit/credit balance rules per account type, opening balance carry-forward, and running balance computation.
+
+**Controllers:**
+- `Http/Controllers/GeneralLedger.php` — `index()` with date range, account, and basis filters; `export()` supporting CSV and PDF
+- `Http/Controllers/TrialBalance.php` — `index()` with date range and basis filters; `export()` supporting CSV and PDF
+
+**Views:**
+- `views/general-ledger/index.blade.php` — Filter bar, expandable account sections with journal lines and running balances, export buttons
+- `views/general-ledger/pdf.blade.php` — DomPDF-compatible layout for PDF export
+- `views/trial-balance/index.blade.php` — Filter bar, table grouped by account type with subtotals, grand total with balanced/unbalanced indicator, export buttons
+- `views/trial-balance/pdf.blade.php` — DomPDF-compatible layout for PDF export
+
+**Also updated:** Routes (already existed), translations (new keys for reports), and admin menu entries.
+[Thu Mar 26 02:42:31 PM UTC 2026] Task 03-ledger-reports exit: 0
+To https://github.com/lilshtz/akaunting-modules.git
+   cc2d4ce..433cd6b  master -> master
+[Thu Mar 26 02:42:37 PM UTC 2026] Starting 04-balance-sheet-pnl
+Commit successful. Here's what was built/enhanced:
+
+**Controllers:**
+- **BalanceSheet.php** — Hierarchical parent/child grouping with subtotals, comparative prior-year support, PDF+CSV export with comparative columns
+- **ProfitLoss.php** — Period breakdown (monthly/quarterly/annual columns), COGS detection with Gross Profit line, comparative year-over-year, percentage-of-income column
+
+**Views:**
+- **balance-sheet/index.blade.php** — Hierarchical sections with group labels/subtotals, PDF export button, comparative columns
+- **profit-loss/index.blade.php** — Dual layout: standard view with % column + period breakdown view with per-period columns, COGS/Gross Profit section, PDF export button, breakdown selector
+- **balance-sheet/pdf.blade.php** — Full PDF with hierarchical grouping, comparative columns, balance validation
+- **profit-loss/pdf.blade.php** — PDF with COGS/Gross Profit, comparative columns, % of income
+
+**Dashboard Widget:**
+- **DoubleEntryDashboard.php** — Income vs Expense bar chart (12 months), top 5 accounts by balance, last 10 journal entries, quick links to all reports
+- **widgets/dashboard.blade.php** — Full widget view with Chart.js integration
+- **module.json** — Widget registered
+
+**Translations:**
+- Added `period_breakdown`, `no_breakdown`, `cost_of_goods_sold` keys
+[Thu Mar 26 02:50:28 PM UTC 2026] Task 04-balance-sheet-pnl exit: 0
+To https://github.com/lilshtz/akaunting-modules.git
+   a7a82cd..7f0fd7f  master -> master
+[Thu Mar 26 02:50:34 PM UTC 2026] Starting 05-custom-fields
