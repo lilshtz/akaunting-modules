@@ -1,0 +1,11 @@
+{
+    "name": "akaunting/employees",
+    "description": "Employees and departments module for Akaunting",
+    "type": "akaunting-module",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Employees\\": ""
+        }
+    }
+}

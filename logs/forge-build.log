@@ -75,3 +75,14 @@ Commit successful. Here's what was built/enhanced:
 To https://github.com/lilshtz/akaunting-modules.git
    a7a82cd..7f0fd7f  master -> master
 [Thu Mar 26 02:50:34 PM UTC 2026] Starting 05-custom-fields
+Done. The CustomFields module was already largely built. I fixed three gaps:
+
+1. **Event provider** - Registered `SaveCustomFieldValues` listener for all entity events: document create/update (invoices, bills, estimates), contact create/update (customers, vendors), item create/update, transaction create/update, and transfer create/update.
+
+2. **Controller options handling** - Added `parseOptionsText()` method to convert the textarea `options_text` field (one option per line) into the `options_json` array for store/update operations.
+
+3. **SaveCustomFieldValues listener** - Added estimate detection in `resolveEntityType()` and transaction handling.
+[Thu Mar 26 02:53:47 PM UTC 2026] Task 05-custom-fields exit: 0
+To https://github.com/lilshtz/akaunting-modules.git
+   7f0fd7f..2c41139  master -> master
+[Thu Mar 26 02:53:53 PM UTC 2026] Starting 06-employees-departments
