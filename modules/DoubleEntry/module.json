@@ -11,7 +11,9 @@
     "files": [],
     "requires": [],
     "reports": [],
-    "widgets": [],
+    "widgets": [
+        "Modules\\DoubleEntry\\Widgets\\DoubleEntryDashboard"
+    ],
     "settings": [],
     "extra-modules": {},
     "routes": {}

@@ -20,29 +20,27 @@
         <div class="mb-4 bg-white rounded-xl shadow-sm p-4">
             <form method="GET" action="{{ route('double-entry.journals.index') }}" class="flex flex-wrap gap-4 items-end">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ trans('general.start_date') }}</label>
-                    <input type="date" name="start_date" value="{{ request('start_date') }}" class="rounded-md border-gray-300 shadow-sm text-sm">
+                    <label class="block text-sm font-medium text-gray-500 mb-1">{{ trans('general.date') }} {{ trans('general.from') }}</label>
+                    <input type="date" name="date_from" value="{{ request('date_from') }}" class="border rounded px-3 py-2 text-sm">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ trans('general.end_date') }}</label>
-                    <input type="date" name="end_date" value="{{ request('end_date') }}" class="rounded-md border-gray-300 shadow-sm text-sm">
+                    <label class="block text-sm font-medium text-gray-500 mb-1">{{ trans('general.date') }} {{ trans('general.to') }}</label>
+                    <input type="date" name="date_to" value="{{ request('date_to') }}" class="border rounded px-3 py-2 text-sm">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ trans('double-entry::general.reference') }}</label>
-                    <input type="text" name="reference" value="{{ request('reference') }}" placeholder="{{ trans('double-entry::general.reference') }}" class="rounded-md border-gray-300 shadow-sm text-sm">
+                    <label class="block text-sm font-medium text-gray-500 mb-1">{{ trans('double-entry::general.reference') }}</label>
+                    <input type="text" name="reference" value="{{ request('reference') }}" class="border rounded px-3 py-2 text-sm" placeholder="{{ trans('double-entry::general.reference') }}">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ trans('general.status') }}</label>
-                    <select name="status" class="rounded-md border-gray-300 shadow-sm text-sm">
+                    <label class="block text-sm font-medium text-gray-500 mb-1">{{ trans('general.status') }}</label>
+                    <select name="status" class="border rounded px-3 py-2 text-sm">
                         <option value="">{{ trans('general.all') }}</option>
-                        <option value="draft" @selected(request('status') === 'draft')>{{ trans('double-entry::general.statuses.draft') }}</option>
-                        <option value="posted" @selected(request('status') === 'posted')>{{ trans('double-entry::general.statuses.posted') }}</option>
+                        <option value="draft" {{ request('status') === 'draft' ? 'selected' : '' }}>{{ trans('double-entry::general.statuses.draft') }}</option>
+                        <option value="posted" {{ request('status') === 'posted' ? 'selected' : '' }}>{{ trans('double-entry::general.statuses.posted') }}</option>
                     </select>
                 </div>
                 <div>
-                    <button type="submit" class="px-4 py-2 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700">
-                        {{ trans('general.filter') }}
-                    </button>
+                    <button type="submit" class="bg-purple-700 text-white px-4 py-2 rounded text-sm hover:bg-purple-800">{{ trans('general.search') }}</button>
                 </div>
             </form>
         </div>
@@ -64,12 +62,12 @@
                 <tbody>
                     @forelse ($journals as $journal)
                         <tr class="border-b hover:bg-gray-50">
+                            <td class="px-4 py-3 text-sm">{{ $journal->date->format('Y-m-d') }}</td>
                             <td class="px-4 py-3 text-sm">
                                 <a href="{{ route('double-entry.journals.show', $journal->id) }}" class="text-purple-700 hover:underline">
-                                    {{ $journal->date->format('Y-m-d') }}
+                                    {{ $journal->reference ?? '-' }}
                                 </a>
                             </td>
-                            <td class="px-4 py-3 text-sm">{{ $journal->reference ?? '-' }}</td>
                             <td class="px-4 py-3 text-sm">{{ Str::limit($journal->description, 60) }}</td>
                             <td class="px-4 py-3 text-sm text-right">{{ number_format($journal->total_debit, 2) }}</td>
                             <td class="px-4 py-3 text-sm text-right">{{ number_format($journal->total_credit, 2) }}</td>
@@ -85,7 +83,7 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-sm text-right">
-                                <x-dropdown id="dropdown-{{ $journal->id }}">
+                                <x-dropdown id="dropdown-journal-{{ $journal->id }}">
                                     <x-dropdown.link href="{{ route('double-entry.journals.show', $journal->id) }}">
                                         {{ trans('general.show') }}
                                     </x-dropdown.link>
@@ -94,19 +92,7 @@
                                             {{ trans('general.edit') }}
                                         </x-dropdown.link>
                                     @endif
-                                    <x-dropdown.link href="{{ route('double-entry.journals.duplicate', $journal->id) }}"
-                                        data-method="POST">
-                                        {{ trans('general.duplicate') }}
-                                    </x-dropdown.link>
-                                    @if ($journal->status === 'draft')
-                                        <x-delete-link :model="$journal" route="double-entry.journals.destroy" />
-                                    @else
-                                        <x-dropdown.link href="{{ route('double-entry.journals.destroy', $journal->id) }}"
-                                            data-method="DELETE"
-                                            data-confirm="{{ trans('double-entry::general.confirm_reverse') }}">
-                                            {{ trans('double-entry::general.reverse') }}
-                                        </x-dropdown.link>
-                                    @endif
+                                    <x-delete-link :model="$journal" route="double-entry.journals.destroy" />
                                 </x-dropdown>
                             </td>
                         </tr>
@@ -119,12 +105,12 @@
                     @endforelse
                 </tbody>
             </table>
-
-            @if ($journals->hasPages())
-                <div class="px-4 py-3 border-t">
-                    {{ $journals->withQueryString()->links() }}
-                </div>
-            @endif
         </div>
+
+        @if ($journals->hasPages())
+            <div class="mt-4">
+                {{ $journals->withQueryString()->links() }}
+            </div>
+        @endif
     </x-slot>
 </x-layouts.admin>
