@@ -174,3 +174,90 @@ Done. The Bank Feeds module has been built and committed with 33 files across al
 To https://github.com/lilshtz/akaunting-modules.git
    24b48aa..46c6a57  master -> master
 [Thu Mar 26 03:41:16 PM UTC 2026] Starting 12-bank-feeds-matching
+Done. Here's what was built:
+
+**New Files (10):**
+- **Migration** — `bank_feed_reconciliations` table + adds `duplicate_hash`, `is_duplicate`, `match_confidence`, `reconciliation_id` columns to `bank_feed_transactions`
+- **TransactionMatcher** — Matches by amount (±5%, 50pts), date range (±3 days, 30pts), vendor name similarity (20pts). Auto-matches above configurable threshold (default 85%). Returns top 3 suggestions per transaction.
+- **DuplicateDetector** — SHA-256 hash of (account + date + amount + description) to flag duplicates within and across imports.
+- **BankFeedReconciliation model** — Tracks reconciliation sessions with opening/closing/reconciled balances and difference.
+- **Matching controller** — Index (review page), show (detail), accept/reject match, create new transaction, auto-match all, bulk ignore.
+- **Reconciliation controller** — Start session with account/period/balances, show workspace with live totals, match/unmatch within session, mark complete (sets Akaunting transactions as reconciled).
+- **4 Blade views** — Matching index (left: imported txn, right: suggestions with accept buttons), matching show (detail view), reconciliation index (create + history), reconciliation show (balance cards + progress bar + transaction list).
+
+**Modified Files (8):**
+- `BankFeedTransaction` model — Added relationships, scopes, duplicate hash generation, signed amount accessor
+- `Imports` controller — Integrates duplicate detection and auto-matching into import flow
+- `Routes/admin.php` — 10 new routes for matching and reconciliation
+- `AddAdminMenu` — Added Matching and Reconciliation menu items
+- `BankFeedSummary` widget — Shows unmatched count and unreconciled accounts count
+- `summary.blade.php` — Updated widget with clickable unmatched/unreconciled stats
+- `general.php` translations — All new strings for matching and reconciliation
+[Thu Mar 26 03:48:57 PM UTC 2026] Task 12-bank-feeds-matching exit: 0
+To https://github.com/lilshtz/akaunting-modules.git
+   46c6a57..c0f2c14  master -> master
+[Thu Mar 26 03:49:03 PM UTC 2026] Starting 13-stripe-gateway
+You've hit your limit · resets 6pm (UTC)
+[Thu Mar 26 03:51:08 PM UTC 2026] Task 13-stripe-gateway exit: 1
+Everything up-to-date
+[Thu Mar 26 03:51:14 PM UTC 2026] Starting 14-paypal-sync
+You've hit your limit · resets 6pm (UTC)
+[Thu Mar 26 03:51:14 PM UTC 2026] Task 14-paypal-sync exit: 1
+Everything up-to-date
+[Thu Mar 26 03:51:20 PM UTC 2026] Starting 15-projects-milestones
+You've hit your limit · resets 6pm (UTC)
+[Thu Mar 26 03:51:21 PM UTC 2026] Task 15-projects-milestones exit: 1
+Everything up-to-date
+[Thu Mar 26 03:51:26 PM UTC 2026] Starting 16-projects-time-budget
+You've hit your limit · resets 6pm (UTC)
+[Thu Mar 26 03:51:27 PM UTC 2026] Task 16-projects-time-budget exit: 1
+Everything up-to-date
+[Thu Mar 26 03:51:32 PM UTC 2026] Starting 17-expense-claims
+You've hit your limit · resets 6pm (UTC)
+[Thu Mar 26 03:51:33 PM UTC 2026] Task 17-expense-claims exit: 1
+Everything up-to-date
+[Thu Mar 26 03:51:39 PM UTC 2026] Starting 18-payroll-calendars
+You've hit your limit · resets 6pm (UTC)
+[Thu Mar 26 03:51:40 PM UTC 2026] Task 18-payroll-calendars exit: 1
+Everything up-to-date
+[Thu Mar 26 03:51:45 PM UTC 2026] Starting 19-payroll-payslips
+You've hit your limit · resets 6pm (UTC)
+[Thu Mar 26 03:51:46 PM UTC 2026] Task 19-payroll-payslips exit: 1
+Everything up-to-date
+[Thu Mar 26 03:51:51 PM UTC 2026] Starting 20-crm-contacts-companies
+You've hit your limit · resets 6pm (UTC)
+[Thu Mar 26 03:51:52 PM UTC 2026] Task 20-crm-contacts-companies exit: 1
+Everything up-to-date
+[Thu Mar 26 03:51:57 PM UTC 2026] Starting 21-crm-deals-pipeline
+You've hit your limit · resets 6pm (UTC)
+[Thu Mar 26 03:51:58 PM UTC 2026] Task 21-crm-deals-pipeline exit: 1
+Everything up-to-date
+[Thu Mar 26 03:52:04 PM UTC 2026] Starting 22-inventory-warehouses
+You've hit your limit · resets 6pm (UTC)
+[Thu Mar 26 03:52:05 PM UTC 2026] Task 22-inventory-warehouses exit: 1
+Everything up-to-date
+[Thu Mar 26 03:52:10 PM UTC 2026] Starting 23-inventory-variants-barcodes
+You've hit your limit · resets 6pm (UTC)
+[Thu Mar 26 03:52:11 PM UTC 2026] Task 23-inventory-variants-barcodes exit: 1
+Everything up-to-date
+[Thu Mar 26 03:52:16 PM UTC 2026] Starting 24-budgets
+You've hit your limit · resets 6pm (UTC)
+[Thu Mar 26 03:52:17 PM UTC 2026] Task 24-budgets exit: 1
+Everything up-to-date
+[Thu Mar 26 03:52:23 PM UTC 2026] Starting 25-roles-permissions
+You've hit your limit · resets 6pm (UTC)
+[Thu Mar 26 03:52:23 PM UTC 2026] Task 25-roles-permissions exit: 1
+Everything up-to-date
+[Thu Mar 26 03:52:29 PM UTC 2026] Starting 26-pos
+You've hit your limit · resets 6pm (UTC)
+[Thu Mar 26 03:52:30 PM UTC 2026] Task 26-pos exit: 1
+Everything up-to-date
+[Thu Mar 26 03:52:35 PM UTC 2026] Starting 27-appointments-leave
+You've hit your limit · resets 6pm (UTC)
+[Thu Mar 26 03:52:36 PM UTC 2026] Task 27-appointments-leave exit: 1
+Everything up-to-date
+[Thu Mar 26 03:52:41 PM UTC 2026] Starting 28-auto-schedule-reports
+You've hit your limit · resets 6pm (UTC)
+[Thu Mar 26 03:52:43 PM UTC 2026] Task 28-auto-schedule-reports exit: 1
+Everything up-to-date
+[Thu Mar 26 03:52:48 PM UTC 2026] All tasks complete

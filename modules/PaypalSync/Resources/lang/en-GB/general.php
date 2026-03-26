@@ -1,0 +1,33 @@
+<?php
+
+return [
+    'name' => 'PayPal Sync',
+    'description' => 'Import PayPal transactions and match to invoices',
+    'settings' => 'PayPal Sync Settings',
+    'client_id' => 'Client ID',
+    'client_secret' => 'Client Secret',
+    'mode' => 'Mode',
+    'sandbox' => 'Sandbox',
+    'live' => 'Live',
+    'bank_account' => 'Target Bank Account',
+    'last_sync' => 'Last Sync',
+    'sync_now' => 'Sync Now',
+    'sync_success' => 'Successfully synced :imported transactions (:skipped skipped)',
+    'sync_error' => 'Sync failed: :error',
+    'transactions' => 'PayPal Transactions',
+    'transaction_id' => 'PayPal Transaction ID',
+    'payer_email' => 'Payer Email',
+    'matched' => 'Matched',
+    'unmatched' => 'Unmatched',
+    'match' => 'Match to Invoice',
+    'never' => 'Never',
+    'enabled' => 'Enabled',
+    'save' => 'Save Settings',
+    'status' => [
+        'pending' => 'Pending',
+        'completed' => 'Completed',
+        'refunded' => 'Refunded',
+        'reversed' => 'Reversed',
+        'denied' => 'Denied',
+    ],
+];
