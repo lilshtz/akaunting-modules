@@ -1,0 +1,21 @@
+{
+    "alias": "payroll",
+    "icon": "payments",
+    "version": "1.0.0",
+    "active": 1,
+    "providers": [
+        "Modules\\Payroll\\Providers\\Event",
+        "Modules\\Payroll\\Providers\\Main"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [
+        "employees",
+        "double-entry"
+    ],
+    "reports": [],
+    "widgets": [],
+    "settings": [],
+    "extra-modules": {},
+    "routes": {}
+}

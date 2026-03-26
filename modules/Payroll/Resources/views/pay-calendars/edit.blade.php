@@ -1,0 +1,1 @@
+@include('payroll::pay-calendars.form', ['calendar' => $calendar, 'employees' => $employees, 'selectedEmployeeIds' => $selectedEmployeeIds, 'route' => route('payroll.pay-calendars.update', $calendar->id), 'method' => 'PUT'])
