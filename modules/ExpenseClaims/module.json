@@ -1,0 +1,22 @@
+{
+    "alias": "expense-claims",
+    "icon": "receipt_long",
+    "version": "1.0.0",
+    "active": 1,
+    "providers": [
+        "Modules\\ExpenseClaims\\Providers\\Event",
+        "Modules\\ExpenseClaims\\Providers\\Main"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [
+        "employees"
+    ],
+    "reports": [],
+    "widgets": [
+        "Modules\\ExpenseClaims\\Widgets\\ExpenseClaimSummary"
+    ],
+    "settings": [],
+    "extra-modules": {},
+    "routes": {}
+}

@@ -1,0 +1,11 @@
+{
+    "name": "akaunting/expense-claims",
+    "description": "Expense claims module with approval workflow and reimbursement tracking for Akaunting",
+    "type": "akaunting-module",
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Modules\\ExpenseClaims\\": ""
+        }
+    }
+}
