@@ -1,0 +1,18 @@
+{
+    "alias": "projects",
+    "icon": "construction",
+    "version": "1.0.0",
+    "active": 1,
+    "providers": [
+        "Modules\\Projects\\Providers\\Event",
+        "Modules\\Projects\\Providers\\Main"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "reports": [],
+    "widgets": [],
+    "settings": [],
+    "extra-modules": {},
+    "routes": {}
+}

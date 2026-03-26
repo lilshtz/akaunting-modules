@@ -1,0 +1,11 @@
+{
+    "name": "akaunting/projects",
+    "description": "Projects, milestones, tasks, discussions, and activity tracking module for Akaunting",
+    "type": "akaunting-module",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Projects\\": ""
+        }
+    }
+}
