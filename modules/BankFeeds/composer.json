@@ -1,0 +1,11 @@
+{
+    "name": "akaunting/bank-feeds",
+    "description": "Bank Feeds module with CSV/OFX import and categorization rules for Akaunting",
+    "type": "akaunting-module",
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Modules\\BankFeeds\\": ""
+        }
+    }
+}

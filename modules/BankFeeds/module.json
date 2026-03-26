@@ -1,0 +1,20 @@
+{
+    "alias": "bank-feeds",
+    "icon": "account_balance",
+    "version": "1.0.0",
+    "active": 1,
+    "providers": [
+        "Modules\\BankFeeds\\Providers\\Event",
+        "Modules\\BankFeeds\\Providers\\Main"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "reports": [],
+    "widgets": [
+        "Modules\\BankFeeds\\Widgets\\BankFeedSummary"
+    ],
+    "settings": [],
+    "extra-modules": {},
+    "routes": {}
+}

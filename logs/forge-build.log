@@ -134,3 +134,23 @@ Everything up-to-date
 [Thu Mar 26 03:25:46 PM UTC 2026] Task 09-sales-purchase-orders exit: 124
 Everything up-to-date
 [Thu Mar 26 03:25:52 PM UTC 2026] Starting 10-receipts-ocr
+Committed successfully. The Receipts module is complete with all 26 files:
+
+**Module Structure:**
+- **Models:** `Receipt` (with status workflow, scopes, line actions) + `CategorizationRule`
+- **Migration:** `receipts` table + `receipt_categorization_rules` table
+- **Services:**
+  - `OcrService` — Tesseract (local/free), Taggun API, Mindee API with text parsing for vendor, date, amounts, currency
+  - `CategorizationService` — Pattern-based vendor-to-category mapping with wildcard support
+  - `DuplicateDetectionService` — Same vendor + amount + date ±3 days detection
+- **Controllers:**
+  - `Receipts` — index (grid with thumbnails/status filter), upload (drag-drop), store (OCR + auto-categorize), review (side-by-side image + editable fields), process (create bill/payment), destroy, bulkUpload, bulkProcess
+  - `Settings` — OCR provider config, API keys (encrypted), categorization rules CRUD
+  - `Api\Receipts` — `POST /api/receipts/upload`, `GET /api/receipts`, `POST /api/receipts/{id}/process`, `GET /api/receipts/pending`
+- **Views:** Receipt inbox grid, drag-drop upload, review page, process form, bulk upload, settings page, dashboard widget
+- **Sidebar:** "Receipts" menu with inbox, upload, and settings items
+- **Widget:** `ReceiptSummary` showing pending/processed counts
+[Thu Mar 26 03:33:48 PM UTC 2026] Task 10-receipts-ocr exit: 0
+To https://github.com/lilshtz/akaunting-modules.git
+   150c535..24b48aa  master -> master
+[Thu Mar 26 03:33:54 PM UTC 2026] Starting 11-bank-feeds-csv
