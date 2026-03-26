@@ -60,6 +60,11 @@ class CrmContact extends Model
         return $this->hasMany(CrmActivity::class, 'crm_contact_id')->latest('scheduled_at')->latest('created_at');
     }
 
+    public function deals()
+    {
+        return $this->hasMany(CrmDeal::class, 'crm_contact_id')->where('status', '<>', CrmDeal::STATUS_DELETED);
+    }
+
     public function scopeStage($query, ?string $stage)
     {
         if (empty($stage)) {

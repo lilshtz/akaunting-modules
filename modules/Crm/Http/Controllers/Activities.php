@@ -51,10 +51,15 @@ class Activities extends Controller
     {
         $activity = CrmActivity::where('company_id', company_id())->findOrFail($id);
         $contactId = $activity->crm_contact_id;
+        $dealId = $activity->crm_deal_id;
 
         $activity->delete();
 
         flash(trans('messages.success.deleted', ['type' => trans('crm::general.activity')]))->success();
+
+        if ($dealId) {
+            return redirect()->route('crm.deals.show', $dealId);
+        }
 
         return redirect()->route('crm.contacts.show', $contactId);
     }

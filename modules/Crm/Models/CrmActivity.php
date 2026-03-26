@@ -39,6 +39,11 @@ class CrmActivity extends Model
         return $this->belongsTo(CrmContact::class, 'crm_contact_id');
     }
 
+    public function deal()
+    {
+        return $this->belongsTo(CrmDeal::class, 'crm_deal_id');
+    }
+
     public function user()
     {
         return $this->belongsTo('App\Models\Auth\User', 'user_id');

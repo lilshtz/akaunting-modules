@@ -78,7 +78,24 @@
 
                 <div class="rounded-xl bg-white p-6 shadow-sm">
                     <h2 class="mb-2 text-lg font-semibold">{{ trans('crm::general.linked_deals') }}</h2>
-                    <p class="text-sm text-gray-500">{{ trans('crm::general.no_linked_deals') }}</p>
+                    <div class="mb-4">
+                        <x-link href="{{ route('crm.deals.create', ['crm_contact_id' => $contact->id]) }}" kind="primary">{{ trans('general.title.new', ['type' => trans('crm::general.deal')]) }}</x-link>
+                    </div>
+                    <div class="space-y-3">
+                        @forelse ($contact->deals as $deal)
+                            <div class="rounded-lg border border-gray-200 p-4">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div>
+                                        <a href="{{ route('crm.deals.show', $deal->id) }}" class="font-medium text-sky-700">{{ $deal->name }}</a>
+                                        <div class="text-sm text-gray-500">{{ $deal->stage?->name ?? '-' }} • {{ money($deal->value, setting('default.currency', 'USD')) }}</div>
+                                    </div>
+                                    <div class="text-xs text-gray-500">{{ optional($deal->expected_close)->format('M d, Y') ?: '-' }}</div>
+                                </div>
+                            </div>
+                        @empty
+                            <p class="text-sm text-gray-500">{{ trans('crm::general.no_linked_deals') }}</p>
+                        @endforelse
+                    </div>
                 </div>
             </div>
 

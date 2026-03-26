@@ -94,7 +94,14 @@ class Contacts extends Controller
 
     public function show(int $id): Response|mixed
     {
-        $contact = $this->findContact($id, ['crmCompany', 'owner', 'akauntingContact', 'activities.user']);
+        $contact = $this->findContact($id, [
+            'crmCompany',
+            'owner',
+            'akauntingContact',
+            'activities.user',
+            'deals.stage',
+            'deals.invoice',
+        ]);
 
         $invoices = collect();
 
