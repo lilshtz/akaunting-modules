@@ -1,0 +1,18 @@
+{
+    "alias": "inventory",
+    "icon": "inventory_2",
+    "version": "1.0.0",
+    "active": 1,
+    "providers": [
+        "Modules\\Inventory\\Providers\\Event",
+        "Modules\\Inventory\\Providers\\Main"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "reports": [],
+    "widgets": [],
+    "settings": [],
+    "extra-modules": {},
+    "routes": {}
+}

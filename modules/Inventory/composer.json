@@ -1,0 +1,11 @@
+{
+    "name": "akaunting/inventory",
+    "description": "Inventory warehouses and stock tracking module for Akaunting",
+    "type": "akaunting-module",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Inventory\\": ""
+        }
+    }
+}
