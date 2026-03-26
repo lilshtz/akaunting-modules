@@ -12,7 +12,7 @@ class History extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = HistoryModel::where('company_id', company_id())
-            ->with(['item', 'warehouse']);
+            ->with(['item', 'variant', 'warehouse']);
 
         if ($request->filled('item_id')) {
             $query->where('item_id', (int) $request->get('item_id'));
@@ -20,6 +20,10 @@ class History extends Controller
 
         if ($request->filled('warehouse_id')) {
             $query->where('warehouse_id', (int) $request->get('warehouse_id'));
+        }
+
+        if ($request->filled('variant_id')) {
+            $query->where('variant_id', (int) $request->get('variant_id'));
         }
 
         if ($request->filled('type')) {

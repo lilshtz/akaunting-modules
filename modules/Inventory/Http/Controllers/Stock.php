@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Inventory\Http\Requests\StockUpdate;
 use Modules\Inventory\Models\Stock as StockModel;
+use Modules\Inventory\Models\Variant;
 use Modules\Inventory\Services\InventoryService;
 
 class Stock extends Controller
@@ -22,7 +23,7 @@ class Stock extends Controller
             ->select('inventory_stock.*')
             ->join('inventory_warehouses', 'inventory_warehouses.id', '=', 'inventory_stock.warehouse_id')
             ->where('inventory_warehouses.company_id', company_id())
-            ->with(['item', 'warehouse']);
+            ->with(['item', 'variant', 'warehouse']);
 
         if ($request->filled('warehouse_id')) {
             $query->where('inventory_stock.warehouse_id', (int) $request->get('warehouse_id'));
@@ -30,6 +31,10 @@ class Stock extends Controller
 
         if ($request->filled('item_id')) {
             $query->where('inventory_stock.item_id', (int) $request->get('item_id'));
+        }
+
+        if ($request->filled('variant_id')) {
+            $query->where('inventory_stock.variant_id', (int) $request->get('variant_id'));
         }
 
         if ($request->boolean('low_stock')) {
@@ -42,9 +47,17 @@ class Stock extends Controller
 
     public function update(StockUpdate $request): JsonResponse
     {
+        $item = Item::where('company_id', company_id())->findOrFail((int) $request->get('item_id'));
+        $variantId = null;
+
+        if ($request->filled('variant_id')) {
+            $variantId = Variant::where('item_id', $item->id)->findOrFail((int) $request->get('variant_id'))->id;
+        }
+
         $stock = $this->inventory->setStockLevel(
             company_id(),
-            (int) $request->get('item_id'),
+            (int) $item->id,
+            $variantId,
             (int) $request->get('warehouse_id'),
             (float) $request->get('quantity'),
             $request->filled('reorder_level') ? (float) $request->get('reorder_level') : null,
@@ -65,7 +78,7 @@ class Stock extends Controller
             ->join('inventory_warehouses', 'inventory_warehouses.id', '=', 'inventory_stock.warehouse_id')
             ->where('inventory_warehouses.company_id', company_id())
             ->where('inventory_stock.item_id', $itemId)
-            ->with('warehouse')
+            ->with(['variant', 'warehouse'])
             ->get();
 
         return response()->json([

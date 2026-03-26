@@ -6,8 +6,11 @@ use App\Models\Document\Document;
 use App\Models\Document\DocumentItem;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\Inventory\Models\Adjustment;
 use Modules\Inventory\Models\History;
 use Modules\Inventory\Models\Stock;
+use Modules\Inventory\Models\TransferOrder;
+use Modules\Inventory\Models\Variant;
 use Modules\Inventory\Models\Warehouse;
 
 class InventoryService
@@ -33,15 +36,20 @@ class InventoryService
     public function setStockLevel(
         int $companyId,
         int $itemId,
+        ?int $variantId,
         int $warehouseId,
         float $quantity,
         ?float $reorderLevel = null,
         ?string $description = null
     ): Stock {
-        return DB::transaction(function () use ($companyId, $itemId, $warehouseId, $quantity, $reorderLevel, $description) {
+        return DB::transaction(function () use ($companyId, $itemId, $variantId, $warehouseId, $quantity, $reorderLevel, $description) {
             $stock = Stock::lockForUpdate()
-                ->firstOrNew([
+                ->where('item_id', $itemId)
+                ->where('warehouse_id', $warehouseId)
+                ->when($variantId, fn ($query) => $query->where('variant_id', $variantId), fn ($query) => $query->whereNull('variant_id'))
+                ->first() ?: new Stock([
                     'item_id' => $itemId,
+                    'variant_id' => $variantId,
                     'warehouse_id' => $warehouseId,
                 ]);
 
@@ -56,6 +64,7 @@ class InventoryService
                 $this->createHistory([
                     'company_id' => $companyId,
                     'item_id' => $itemId,
+                    'variant_id' => $variantId,
                     'warehouse_id' => $warehouseId,
                     'quantity_change' => $change,
                     'type' => 'adjustment',
@@ -66,13 +75,14 @@ class InventoryService
                 ]);
             }
 
-            return $stock->fresh(['item', 'warehouse']);
+            return $stock->fresh(['item', 'variant', 'warehouse']);
         });
     }
 
     public function adjustStock(
         int $companyId,
         int $itemId,
+        ?int $variantId,
         int $warehouseId,
         float $quantityChange,
         string $type,
@@ -81,17 +91,21 @@ class InventoryService
         ?string $description = null,
         $date = null
     ): Stock {
-        return DB::transaction(function () use ($companyId, $itemId, $warehouseId, $quantityChange, $type, $referenceType, $referenceId, $description, $date) {
+        return DB::transaction(function () use ($companyId, $itemId, $variantId, $warehouseId, $quantityChange, $type, $referenceType, $referenceId, $description, $date) {
             $stock = Stock::lockForUpdate()
-                ->firstOrCreate(
-                    [
-                        'item_id' => $itemId,
-                        'warehouse_id' => $warehouseId,
-                    ],
-                    [
-                        'quantity' => 0,
-                    ]
-                );
+                ->where('item_id', $itemId)
+                ->where('warehouse_id', $warehouseId)
+                ->when($variantId, fn ($query) => $query->where('variant_id', $variantId), fn ($query) => $query->whereNull('variant_id'))
+                ->first();
+
+            if (! $stock) {
+                $stock = Stock::create([
+                    'item_id' => $itemId,
+                    'variant_id' => $variantId,
+                    'warehouse_id' => $warehouseId,
+                    'quantity' => 0,
+                ]);
+            }
 
             $stock->quantity = round(((float) $stock->quantity) + $quantityChange, 4);
             $stock->save();
@@ -99,6 +113,7 @@ class InventoryService
             $this->createHistory([
                 'company_id' => $companyId,
                 'item_id' => $itemId,
+                'variant_id' => $variantId,
                 'warehouse_id' => $warehouseId,
                 'quantity_change' => $quantityChange,
                 'type' => $type,
@@ -108,7 +123,7 @@ class InventoryService
                 'date' => $date ?: now(),
             ]);
 
-            return $stock->fresh(['item', 'warehouse']);
+            return $stock->fresh(['item', 'variant', 'warehouse']);
         });
     }
 
@@ -141,6 +156,7 @@ class InventoryService
             $this->adjustStock(
                 (int) $document->company_id,
                 (int) $item->item_id,
+                null,
                 (int) $warehouse->id,
                 $quantity,
                 $document->type === Document::INVOICE_TYPE ? 'sale' : 'purchase',
@@ -160,8 +176,150 @@ class InventoryService
             ->where('inventory_warehouses.company_id', $companyId)
             ->whereNotNull('inventory_stock.reorder_level')
             ->whereColumn('inventory_stock.quantity', '<', 'inventory_stock.reorder_level')
-            ->with(['item', 'warehouse'])
+            ->with(['item', 'variant', 'warehouse'])
             ->get();
+    }
+
+    public function createAdjustment(
+        int $companyId,
+        Warehouse $warehouse,
+        \App\Models\Common\Item $item,
+        ?Variant $variant,
+        float $quantity,
+        string $reason,
+        ?string $description = null,
+        $date = null,
+        ?int $userId = null
+    ): Adjustment {
+        return DB::transaction(function () use ($companyId, $warehouse, $item, $variant, $quantity, $reason, $description, $date, $userId) {
+            $adjustment = Adjustment::create([
+                'company_id' => $companyId,
+                'warehouse_id' => $warehouse->id,
+                'item_id' => $item->id,
+                'variant_id' => $variant?->id,
+                'quantity' => $quantity,
+                'reason' => $reason,
+                'description' => $description,
+                'date' => $date ?: now(),
+                'user_id' => $userId ?: 1,
+            ]);
+
+            $this->adjustStock(
+                $companyId,
+                (int) $item->id,
+                $variant?->id,
+                (int) $warehouse->id,
+                $quantity,
+                'adjustment',
+                'inventory_adjustment',
+                (int) $adjustment->id,
+                trim(implode(' - ', array_filter([ucfirst($reason), $description])))
+            );
+
+            return $adjustment;
+        });
+    }
+
+    public function createTransferOrder(int $companyId, array $payload, string $status = 'draft'): TransferOrder
+    {
+        return DB::transaction(function () use ($companyId, $payload, $status) {
+            $order = TransferOrder::create([
+                'company_id' => $companyId,
+                'from_warehouse_id' => $payload['from_warehouse_id'],
+                'to_warehouse_id' => $payload['to_warehouse_id'],
+                'status' => $status,
+                'date' => $payload['date'] ?: now(),
+                'description' => $payload['description'] ?? null,
+            ]);
+
+            $order->items()->createMany($payload['items']);
+
+            return $order;
+        });
+    }
+
+    public function updateTransferOrder(TransferOrder $order, array $payload, string $status): TransferOrder
+    {
+        if ($order->status === 'received') {
+            return $order;
+        }
+
+        return DB::transaction(function () use ($order, $payload, $status) {
+            $order->update([
+                'from_warehouse_id' => $payload['from_warehouse_id'],
+                'to_warehouse_id' => $payload['to_warehouse_id'],
+                'status' => $status,
+                'date' => $payload['date'] ?: $order->date,
+                'description' => $payload['description'] ?? null,
+            ]);
+
+            $order->items()->delete();
+            $order->items()->createMany($payload['items']);
+
+            return $order->fresh(['items']);
+        });
+    }
+
+    public function shipTransferOrder(TransferOrder $order): TransferOrder
+    {
+        if ($order->status !== 'draft') {
+            return $order;
+        }
+
+        return DB::transaction(function () use ($order) {
+            $order->loadMissing('items');
+
+            foreach ($order->items as $item) {
+                $this->adjustStock(
+                    (int) $order->company_id,
+                    (int) $item->item_id,
+                    $item->variant_id ? (int) $item->variant_id : null,
+                    (int) $order->from_warehouse_id,
+                    -1 * (float) $item->quantity,
+                    'transfer_out',
+                    'transfer_order',
+                    (int) $order->id,
+                    'Transfer shipped'
+                );
+            }
+
+            $order->update(['status' => 'in_transit']);
+
+            return $order->fresh(['items']);
+        });
+    }
+
+    public function receiveTransferOrder(TransferOrder $order): TransferOrder
+    {
+        if ($order->status === 'received') {
+            return $order;
+        }
+
+        return DB::transaction(function () use ($order) {
+            if ($order->status === 'draft') {
+                $order = $this->shipTransferOrder($order);
+            }
+
+            $order->loadMissing('items');
+
+            foreach ($order->items as $item) {
+                $this->adjustStock(
+                    (int) $order->company_id,
+                    (int) $item->item_id,
+                    $item->variant_id ? (int) $item->variant_id : null,
+                    (int) $order->to_warehouse_id,
+                    (float) $item->quantity,
+                    'transfer_in',
+                    'transfer_order',
+                    (int) $order->id,
+                    'Transfer received'
+                );
+            }
+
+            $order->update(['status' => 'received']);
+
+            return $order->fresh(['items']);
+        });
     }
 
     protected function documentAlreadyApplied(int $documentId, string $referenceType): bool

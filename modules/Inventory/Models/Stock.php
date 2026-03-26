@@ -10,6 +10,7 @@ class Stock extends Model
 
     protected $fillable = [
         'item_id',
+        'variant_id',
         'warehouse_id',
         'quantity',
         'reorder_level',
@@ -25,6 +26,11 @@ class Stock extends Model
     public function item()
     {
         return $this->belongsTo('App\Models\Common\Item')->withDefault(['name' => trans('general.na')]);
+    }
+
+    public function variant()
+    {
+        return $this->belongsTo(Variant::class, 'variant_id');
     }
 
     public function warehouse()

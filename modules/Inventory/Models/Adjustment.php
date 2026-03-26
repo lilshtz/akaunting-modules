@@ -4,33 +4,30 @@ namespace Modules\Inventory\Models;
 
 use App\Abstracts\Model;
 
-class History extends Model
+class Adjustment extends Model
 {
-    protected $table = 'inventory_history';
+    protected $table = 'inventory_adjustments';
 
     protected $fillable = [
         'company_id',
+        'warehouse_id',
         'item_id',
         'variant_id',
-        'warehouse_id',
-        'quantity_change',
-        'type',
-        'reference_type',
-        'reference_id',
+        'quantity',
+        'reason',
         'description',
         'date',
+        'user_id',
     ];
 
     protected $casts = [
-        'quantity_change' => 'double',
+        'quantity' => 'double',
         'date' => 'datetime',
     ];
 
-    protected $sortable = ['date', 'type', 'quantity_change', 'created_at'];
-
-    public function company()
+    public function warehouse()
     {
-        return $this->belongsTo('App\Models\Common\Company');
+        return $this->belongsTo(Warehouse::class, 'warehouse_id');
     }
 
     public function item()
@@ -43,8 +40,8 @@ class History extends Model
         return $this->belongsTo(Variant::class, 'variant_id');
     }
 
-    public function warehouse()
+    public function user()
     {
-        return $this->belongsTo(Warehouse::class, 'warehouse_id');
+        return $this->belongsTo('App\Models\Auth\User', 'user_id');
     }
 }
