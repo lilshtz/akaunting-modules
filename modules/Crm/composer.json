@@ -1,0 +1,11 @@
+{
+    "name": "akaunting/crm",
+    "description": "CRM contacts, companies, activities, and Akaunting contact sync module for Akaunting",
+    "type": "akaunting-module",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Crm\\": ""
+        }
+    }
+}
