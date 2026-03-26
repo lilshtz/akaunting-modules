@@ -1,756 +1,739 @@
-# PRD: BookieBooks — Self-Hosted Accounting Platform
+# PRD: Build All Paid Akaunting Modules — Free, Self-Hosted
 
 ## Problem
-Andrew runs 6 entities (AMR, SSS, SSH, Logos, Max Gamma Trust, Personal) and needs a full-featured accounting platform. Akaunting's free tier is too limited, and the paid modules are $300-500 with vendor lock-in. Instead of buying or extending Akaunting, we build our own — purpose-built for Andrew's multi-entity construction/consulting business, fully integrated with the Bookie agent and the OpenClaw ecosystem.
+Akaunting is already running self-hosted at `http://localhost:8085` (Docker, Laravel 10, MariaDB). The free tier includes core invoicing, bills, banking, dashboard, settings, and two modules (OfflinePayments, PaypalStandard). All the valuable features — double-entry accounting, estimates, inventory, payroll, CRM, projects, receipts, budgeting, expense claims, custom fields, and more — are locked behind paid modules ($30-80 each, or $300-500+ total).
+
+**We build them ourselves as native Akaunting Laravel modules.** Same UI. Same DB. Same module system. Free forever.
 
 ## Goal
-Build **BookieBooks** — a self-hosted, full-featured double-entry accounting platform with all the capabilities of Akaunting's paid modules, tailored to Andrew's specific workflows. Runs alongside (or replaces) Akaunting on the server. Bookie agent is the primary operator via API; Andrew accesses via web UI.
+Build and install every paid Akaunting module as custom Laravel modules on the existing self-hosted instance. When done, Andrew's Akaunting should have **full feature parity with Akaunting's Ultimate Cloud plan** — zero paid licenses.
 
-## Tech Stack
-- **Backend:** Node.js + Express (or Next.js API routes) + TypeScript
-- **Frontend:** Next.js + React + Tailwind CSS
-- **Database:** PostgreSQL (new container or shared with existing)
-- **ORM:** Prisma
-- **Auth:** Session-based (single user + optional accountant access)
-- **Deployment:** Docker container on clawserv, reverse-proxied
-- **API:** RESTful JSON API (Bookie automation) + Web UI (Andrew)
-- **Port:** TBD (suggest 8090)
+## Architecture
 
-## Entities (Companies)
-1. **AM Remodeling Corporation (AMR)** — GC, Cape May, primary revenue
-2. **Seven Sigma Strategies LLC (SSS)** — Tech/consulting
-3. **Sigma State Holdings LLC (SSH)** — Holding company (WY)
-4. **Logos Management LLC** — Management company
-5. **Max Gamma Trust** — Trust entity
-6. **Personal** — Andrew's personal finances
+### How Akaunting Modules Work
+- Modules live in `/var/www/html/modules/{ModuleName}/`
+- Each is a Laravel package: Controllers, Models, Migrations, Views, Routes, Providers
+- Registered via `module.json` (alias, version, providers, requires, reports, widgets)
+- Installed via `php artisan module:install {alias} {company_id}`
+- Created via `php artisan module:make {alias}`
+- Views use Blade templates with Akaunting's existing Tailwind component system
+- Routes: `admin.php` (backend) and `portal.php` (client portal)
+- DB migrations run per-module in `Database/Migrations/`
+- Events/Listeners hook into core Akaunting events (sidebar menu, document creation, etc.)
 
-Each entity is an isolated company with its own COA, ledger, and reporting. Switch between them from a single dashboard.
+### Existing Core Models (DO NOT recreate)
+These already exist in the Akaunting core and our modules extend them:
+- `Company`, `User`, `UserCompany`, `Role`, `Permission`
+- `Account` (bank), `Transaction`, `Reconciliation`, `Transfer`
+- `Contact` (customers + vendors), `ContactPerson`
+- `Document` (invoices + bills), `DocumentItem`, `DocumentItemTax`, `DocumentHistory`, `DocumentTotal`
+- `Item`, `ItemTax`, `Category`, `Currency`, `Tax`
+- `Setting`, `EmailTemplate`, `Recurring`, `Report`, `Widget`, `Dashboard`
+- `Media`, `Notification`, `Module`, `ModuleHistory`
+
+### Tech Environment
+- **Akaunting:** v3.x (Laravel 10.50.0)
+- **PHP:** 8.1+
+- **DB:** MariaDB 11 (Docker: `akaunting-db`)
+- **Container:** `akaunting` → port 8085
+- **Module path:** `/var/www/html/modules/`
 
 ---
 
-## Feature Modules
+## Modules to Build (20 total)
 
-### Module 1: Core Platform & Multi-Company
-**The foundation everything else builds on.**
+### Module 1: DoubleEntry ⭐ CRITICAL
+**The backbone. Everything else depends on this.**
 
-- Multi-company support — create/switch/manage companies from one login
-- Company settings: name, address, fiscal year, currency, tax ID, logo
-- User roles: Owner (Andrew), Accountant (read-only + journal entries), Agent (API-only for Bookie)
-- Dashboard per company: cash balance, income/expense chart, recent transactions, overdue invoices
-- Global dashboard: consolidated view across all entities
-- Settings: localisation, date format, number format, timezone
-- Categories: create income/expense/item categories with color coding
-- Currencies: multi-currency support with exchange rates
-- Tax rates: define tax names, rates, compound taxes, link to items/transactions
+Chart of Accounts, General Ledger, Balance Sheet, Trial Balance, P&L, Manual Journals.
 
-**Commit:** `feat: core platform with multi-company and dashboard`
-
-### Module 2: Double-Entry Accounting
-**Chart of Accounts, General Ledger, Manual Journals, Trial Balance, Balance Sheet, P&L.**
-
-- **Chart of Accounts (COA)**
+**Features:**
+- Chart of Accounts (COA)
   - Account types: Asset, Liability, Equity, Income, Expense
-  - Sub-accounts (parent/child hierarchy, unlimited depth)
-  - Account codes (numbering system: 1xxx Assets, 2xxx Liabilities, etc.)
-  - Enable/disable accounts
-  - Default accounts per company (AR, AP, bank, etc.)
-  - Import COA from CSV (QuickBooks export compatible)
-
-- **General Ledger**
-  - Every transaction auto-posts debit/credit entries
-  - Filter by account, date range, accounting basis (cash vs accrual)
+  - Sub-accounts with parent/child hierarchy (unlimited depth)
+  - Account codes (1xxx-5xxx numbering convention)
+  - Enable/disable individual accounts
+  - Default system accounts (AR, AP, Retained Earnings, etc.)
+  - Import from CSV (QuickBooks export compatible)
+  - Opening balances per account
+- General Ledger
+  - Every invoice, bill, payment, transfer auto-posts journal entries (debit + credit)
+  - Filter by: account, date range, contact, accounting basis
   - Running balance per account
-  - Export to CSV/PDF
-
-- **Manual Journal Entries**
-  - Create entries with multiple debit/credit lines
-  - Must balance (total debits = total credits)
+  - Export CSV/PDF
+- Manual Journal Entries
+  - Multi-line entries with debit/credit per line
+  - Validation: total debits must equal total credits
   - Attach supporting documents
-  - Recurring journal entries
-  - Reference number, description, date
-
-- **Trial Balance**
+  - Recurring journals (monthly accruals, depreciation)
+  - Reference number, date, description, currency
+- Trial Balance
   - Debit/credit columns per account
-  - Filter by date range
-  - Verify books balance before close
-
-- **Balance Sheet**
+  - Date range filter
+  - Verify books balance before period close
+- Balance Sheet
   - Assets / Liabilities / Equity sections
-  - Hierarchical (follows COA parent/child)
-  - As of any date
-  - Comparative (this year vs last year)
-
-- **Profit & Loss (Income Statement)**
-  - Income vs Expenses with net profit
-  - Monthly / Quarterly / Annual views
-  - By category breakdown
+  - Hierarchical (follows COA structure)
+  - As-of-date selector
+  - Comparative periods (this year vs last year)
+- Profit & Loss (Income Statement)
+  - Income vs Expenses with net profit/loss
+  - Monthly / Quarterly / Annual breakdown
+  - Category-level detail
   - Comparative periods
+  - Cash basis and accrual basis toggle
+- Double-Entry Dashboard widget
+  - Quick COA summary, recent journal entries, account balances
 
-- **Accounting Basis**
-  - Support both cash and accrual basis
-  - Per-company setting
-  - Reports adjust based on basis
+**DB Tables:**
+- `double_entry_accounts` — id, company_id, parent_id, code, name, type, description, opening_balance, enabled
+- `double_entry_journals` — id, company_id, date, reference, description, status, basis
+- `double_entry_journal_lines` — id, journal_id, account_id, debit, credit, description
+- `double_entry_account_defaults` — company_id, type, account_id (maps "accounts_receivable" → account #1200)
 
-**Commit:** `feat: double-entry accounting with COA, ledger, journals, reports`
+**Requires:** None (foundation module)
+**Commit:** `feat(modules): double-entry accounting with COA, ledger, journals, reports`
 
-### Module 3: Invoicing & Sales
-**Create, send, and track invoices.**
+---
 
-- Create invoices with line items (description, quantity, price, tax, discount)
-- Invoice numbering (auto-increment, customizable prefix per entity: SSS-1001, AMR-1001)
-- Invoice statuses: Draft → Sent → Viewed → Partial → Paid → Overdue → Cancelled
-- Email invoices to customers (PDF attachment)
-- Client portal: customer views/pays invoices via unique link
-- Recurring invoices (weekly, monthly, custom)
-- Payment recording (partial payments, overpayments)
-- Late payment reminders (auto-email)
-- Invoice templates (customizable per entity with logo, colors, footer)
-- Attach files to invoices
-- Discount: per-line or per-invoice (% or fixed)
-- Notes and terms fields
-- PDF export / print
-- **Cape May specific:** Auto-calculate 20% markup on sub costs for Owner Representative Fee invoices
-
-**Commit:** `feat: invoicing with templates, recurring, client portal`
-
-### Module 4: Bills & Purchases
-**Track what you owe.**
-
-- Create bills from vendors (mirror of invoices, but payable)
-- Bill statuses: Draft → Received → Partial → Paid → Overdue → Cancelled
-- Payment scheduling and tracking
-- Recurring bills (rent, insurance, subscriptions)
-- Attach documents (scanned bills, PDFs)
-- Bill categories map to COA expense accounts
-- Vendor management: name, address, email, phone, tax ID, trade, payment terms
-- Purchase history per vendor
-- **1099 tracking:** Flag vendors as 1099-eligible, track annual payments, generate 1099 summary
-
-**Commit:** `feat: bills, vendor management, 1099 tracking`
-
-### Module 5: Banking & Reconciliation
-**Track bank accounts and reconcile transactions.**
-
-- Create unlimited bank/cash accounts per entity
-- Track opening and current balances
-- Deposits and withdrawals
-- Transfers between accounts (intra-entity and inter-entity)
-- Bank reconciliation: match imported transactions to recorded ones
-- CSV import for bank statements (BoA, Chase, etc. formats)
-- Auto-categorization rules (vendor name → category)
-- Unmatched transaction queue
-- Running reconciled vs unreconciled balance
-
-**Commit:** `feat: banking, transfers, CSV import, reconciliation`
-
-### Module 6: Estimates & Quotes
+### Module 2: Estimates ⭐
 **Create quotes, get approval, convert to invoices.**
 
-- Create estimates with line items, pricing, tax
-- Estimate statuses: Draft → Sent → Viewed → Approved → Refused → Converted → Expired
-- Expiration dates
-- Customer approval via email link (approve/refuse with notes)
-- One-click convert estimate → invoice
-- Notification on view/approve/refuse
-- Estimate numbering (auto-increment)
-- PDF export / email
-- Template customization per entity
-- **Cape May specific:**
-  - Template: "Owner Representative Fee — 20% of sub costs"
-  - Line item calculator: input sub invoice amount → auto-output 20% fee
-  - Reimbursement line: input cost → auto-output 120% (cost + 20% markup)
-  - Track against Adam's retainer balance
+**Features:**
+- Estimate CRUD with line items (description, quantity, price, tax, discount)
+- Auto-numbering with customizable prefix per company (EST-0001)
+- Statuses: Draft → Sent → Viewed → Approved → Refused → Converted → Expired
+- Expiration date with auto-expire
+- Customer approval: email link with Approve/Refuse buttons + optional notes
+- Notification on view/approve/refuse (email + in-app)
+- One-click convert Estimate → Invoice (preserves all line items)
+- Estimate → Sales Order conversion (if Sales/Purchase Orders module installed)
+- PDF generation with company-branded template
+- Email estimate as PDF attachment
+- Print / Download
+- Attach files (drawings, specs, scope documents)
+- Notes and terms/conditions fields
+- Recurring estimates
+- Portal view (customer sees via link)
+- Estimate reports: sent, approved, refused, converted rates
 
-**Commit:** `feat: estimates with approval workflow and invoice conversion`
+**DB Tables:**
+- Uses core `documents` table with `type = 'estimate'`
+- `estimate_settings` — company_id, prefix, next_number, default_terms, template
 
-### Module 7: Receipts & Document Management
-**OCR receipt capture, auto-categorization, attachment to transactions.**
+**Requires:** None
+**Commit:** `feat(modules): estimates with approval workflow and invoice conversion`
 
-- Upload receipt images (drag-drop, mobile camera, API upload)
-- OCR extraction: vendor, date, amount, tax, payment method, description
-- Auto-categorize by vendor name rules
-- Auto-assign to entity based on payment method/card
-- Create bill/payment from receipt data
-- Attach receipt image to transaction
-- Duplicate detection (same vendor + amount + date)
-- Receipt inbox: queue of unprocessed receipts
-- Bulk processing
-- Search receipts by vendor, date, amount, category
-- **Bookie integration:** Discord drop → API upload → OCR → categorize → create transaction
+---
 
-**Commit:** `feat: receipt management with OCR and auto-categorization`
+### Module 3: CustomFields
+**Add custom data fields to any record type.**
 
-### Module 8: Projects & Job Costing
-**Track project budgets, costs, and profitability.**
+**Features:**
+- Define custom fields for: invoices, bills, estimates, customers, vendors, items, accounts, employees, transfers, projects, expenses
+- Field types: Text, Textarea, Number, Date, DateTime, Time, Select (dropdown), Checkbox, Toggle, URL, Email
+- Required vs optional validation
+- Default values
+- Position ordering (field display order on forms)
+- Custom field size (full width, half width)
+- Show/hide on PDF exports
+- Integration with all other modules (fields render on create/edit forms automatically)
+- Filter and search by custom field values
+- Bulk import/export with custom field data
+- Unlimited custom fields per entity type
 
-- Create projects with: name, client, budget, start/end dates, status
-- Milestones with target dates and completion tracking
-- Tasks within milestones (assignable, with priority and status)
-- Link invoices and bills to projects
-- Project P&L: income vs costs per project
-- Budget vs actual tracking with variance alerts
-- Time tracking: start/stop timer per task, manual entry
-- Billing styles: project hours, task hours, fixed rate
-- Team members (future: assign to contractors)
-- Project dashboard: progress %, budget burn, timeline
-- Activity feed per project
-- **Cape May project:**
-  - Milestones: Site Work → Foundation → Framing → Roofing → MEP → Interior → Punch → Closeout
-  - Budget tracking per phase
-  - All Cape May transactions auto-linked
+**DB Tables:**
+- `custom_field_definitions` — id, company_id, entity_type, name, field_type, required, default_value, options_json, position, show_on_pdf, width
+- `custom_field_values` — id, definition_id, entity_type, entity_id, value
 
-**Commit:** `feat: project management with budget tracking and job costing`
+**Requires:** None
+**Commit:** `feat(modules): custom fields for all record types`
 
-### Module 9: Expense Claims
-**Contractor/employee expense submission and approval.**
+---
 
-- Submit expense claims with line items and receipt attachments
-- Claim statuses: Pending → Approved → Refused → Paid
-- Approval workflow (Andrew approves)
-- Mark as "Paid by Employee/Contractor" for reimbursement
-- Reimbursement tracking
-- Category assignment per line item
-- Approver notes on refusal
-- Summary reports: by employee, by category, by period
-- Export for tax documentation
+### Module 4: Receipts
+**OCR receipt scanning, auto-capture, and transaction creation.**
 
-**Commit:** `feat: expense claims with approval workflow`
+**Features:**
+- Upload receipt images (web UI drag-drop, API upload for Bookie)
+- OCR extraction: vendor/merchant name, date, total amount, tax amount, currency
+- OCR providers: Tesseract.js (free/local) + optional Taggun/Mindee API keys
+- Review extracted data before saving (edit any field)
+- Auto-match to existing vendor
+- Auto-categorize by vendor rules
+- Create bill or payment directly from receipt
+- Attach receipt image to resulting transaction
+- Duplicate detection (same vendor + amount + date within 3 days)
+- Receipt inbox: queue of uploaded but unprocessed receipts
+- Bulk upload and processing
+- Receipt search: by vendor, date range, amount range, status
+- Statuses: Uploaded → Reviewed → Processed → Matched
+- Multi-language receipt support (52 languages via OCR)
+- Receipt reports
 
-### Module 10: Employees & Contractors
-**HR basics — manage people and their payment info.**
+**DB Tables:**
+- `receipts` — id, company_id, image_path, ocr_raw_json, vendor_name, date, amount, tax_amount, currency, category_id, status, transaction_id, created_at
 
-- Add employees/contractors with: name, email, phone, address, hire date, department
-- Departments: Masonry, Framing, Plumbing, Electrical, Roofing, HVAC, General, Admin
-- Salary/rate info: amount, frequency (hourly/weekly/monthly), payment method
+**Requires:** None (enhanced by DoubleEntry for journal posting)
+**Commit:** `feat(modules): receipt management with OCR and auto-categorization`
+
+---
+
+### Module 5: Employees ⭐
+**Employee/contractor management — HR foundation.**
+
+**Features:**
+- Employee CRUD: name, email, phone, address, photo, hire date, birthday
+- Departments: create/manage departments, assign employees
+- Salary information: amount, type (hourly/weekly/monthly/yearly), currency
 - Bank details for payment
+- Employee types: Full-time, Part-time, Contractor, Seasonal
 - 1099 vs W-2 classification
-- Document storage per person (W-9, insurance cert, license)
+- Login access: give employees portal access with role-based permissions
+- Document storage per employee (W-9, insurance cert, license, agreements)
 - Employee directory with search/filter
-- Active/inactive status
+- Active/Inactive/Terminated status
+- Employment history (dates, role changes)
+- Employee dashboard: headcount, department breakdown
 
-**Commit:** `feat: employee and contractor management`
+**DB Tables:**
+- `employees` — id, company_id, contact_id, department_id, salary, salary_type, bank_details_json, hire_date, birthday, type, classification, status
+- `departments` — id, company_id, name, description, manager_id
 
-### Module 11: Payroll
-**Pay calendars, payslips, benefits/deductions.**
+**Requires:** None (Akaunting core Contact model used as base)
+**Commit:** `feat(modules): employee and contractor management with departments`
 
-- Pay calendars: weekly, bi-weekly, monthly, custom
-- Run payroll: select calendar → review amounts → approve → generate payslips
-- Pay items - Benefits: Bonus, Commission, Allowance, Expense Reimbursement
-- Pay items - Deductions: Tax withholding, Insurance, Loan repayment, Misc
-- Auto-calculate gross → deductions → net pay
-- Generate PDF payslips
-- Post payroll to journal entries automatically
-- Payroll summary reports
-- Payment history per employee
+---
 
-**Commit:** `feat: payroll with pay calendars, payslips, benefits/deductions`
+### Module 6: Payroll
+**Pay calendars, payroll runs, payslips, benefits, deductions.**
 
-### Module 12: CRM (Contacts & Deals)
-**Track customer relationships and sales pipeline.**
+**Features:**
+- Pay calendars: weekly, bi-weekly, monthly, custom frequency
+- Pay calendar scheduling: auto-calculates next run date
+- Payroll run workflow: Create → Review → Approve → Process → Complete
+- Per-employee payslip with: gross pay, itemized benefits, itemized deductions, net pay
+- Pay Items — Benefits: Bonus, Commission, Allowance, Benefit, Expense Reimbursement (customizable list)
+- Pay Items — Deductions: Tax, Insurance, Loan, Advance Pay, Miscellaneous (customizable list)
+- Auto-calculate totals (gross + benefits - deductions = net)
+- PDF payslip generation (print-ready)
+- Email payslips to employees
+- Auto-post payroll to journal entries (salary expense → cash/bank)
+- Payroll history per employee
+- Payroll summary reports: by period, by department, by employee
+- Multi-company payroll (each company runs independently)
+- Attachment support on payslips
+- Notifications: payment due, payroll processed
 
-- Contacts: name, company, email, phone, source, stage, owner
-- Companies: name, address, contacts, currency, default stage
-- Deals/Opportunities: name, contact, value, stage, expected close date
-- Pipeline stages: Lead → Qualified → Proposal → Negotiation → Won → Lost (customizable)
-- Activity log: calls, meetings, emails, notes, tasks
-- Connect invoices to deals
-- Contact → Customer auto-sync
-- Growth and activity reports
-- Search/filter contacts
+**DB Tables:**
+- `pay_calendars` — id, company_id, name, frequency, start_date, next_run_date
+- `pay_items` — id, company_id, type (benefit/deduction), name, default_amount, is_percentage
+- `payroll_runs` — id, pay_calendar_id, period_start, period_end, status, total_gross, total_net, approved_by
+- `payslips` — id, payroll_run_id, employee_id, gross, benefits_json, deductions_json, net, pdf_path
+- `payslip_items` — id, payslip_id, pay_item_id, amount
 
-**Commit:** `feat: CRM with contacts, deals, pipeline`
+**Requires:** Employees module
+**Commit:** `feat(modules): payroll with pay calendars, payslips, benefits/deductions`
 
-### Module 13: Credit/Debit Notes
-**Handle returns, adjustments, and disputes.**
+---
 
-- Credit notes: issue to customer, reduce AR balance
-- Debit notes: issue to vendor, reduce AP balance
+### Module 7: Projects
+**Project management with tasks, milestones, time tracking, and job costing.**
+
+**Features:**
+- Project CRUD: name, client (contact), description, status, budget, start/end dates
+- Billing styles: Project hours, Task hours, Fixed rate
+- Project statuses: Active, Completed, On Hold, Cancelled
+- Milestones with target dates and completion percentage
+- Tasks within milestones: name, description, assignee, priority (Low/Medium/High/Critical), status (To Do/In Progress/Review/Done)
+- Time tracking: start/stop timer, manual timesheet entry
+- Timesheets auto-generated from task activity
+- Link invoices and bills to projects
+- Project P&L: total income vs total costs
+- Budget vs actual tracking with variance calculation and alerts
+- Project dashboard: progress %, budget burn rate, timeline, activity feed
+- Team member assignment
+- Discussion threads per project
+- Project cash flow statement
+- Activity timeline (log of all changes)
+- Task priority sorting and filtering
+- Project reports: profitability, time spent, budget variance
+
+**DB Tables:**
+- `projects` — id, company_id, contact_id, name, description, status, billing_type, billing_rate, budget, start_date, end_date
+- `project_milestones` — id, project_id, name, description, target_date, completed_at
+- `project_tasks` — id, milestone_id, name, description, assignee_id, priority, status, estimated_hours
+- `project_timesheets` — id, task_id, user_id, started_at, ended_at, hours, billable
+- `project_transactions` — id, project_id, document_type, document_id (links invoices/bills to project)
+- `project_discussions` — id, project_id, user_id, body, created_at
+
+**Requires:** Employees (for assignees), DoubleEntry (for P&L)
+**Commit:** `feat(modules): project management with milestones, time tracking, job costing`
+
+---
+
+### Module 8: ExpenseClaims
+**Employee expense submission, approval, and reimbursement.**
+
+**Features:**
+- Expense claim CRUD: employee, date range, description, total
+- Claim line items: date, category, description, amount, receipt attachment
+- Claim statuses: Draft → Submitted → Pending Approval → Approved → Refused → Paid
+- Approval workflow: define approver per claim (or default approver)
+- Mark items as "Paid by Employee" for reimbursement tracking
+- Approver can add notes/reasons for refusal
+- Auto-update Chart of Accounts on approval (expense → payable)
+- Reimbursement tracking (record payment to employee)
+- Claim categories: Materials, Travel, Tools, Equipment, Meals, Misc (customizable)
+- PDF export of claims with receipts
+- Due dates on claims
+- Import/export claims
+- Reports: by employee, by category, by period, pending vs approved
+- Notification: new claim submitted, approved, refused, paid
+
+**DB Tables:**
+- `expense_claims` — id, company_id, employee_id, approver_id, status, description, total, due_date, approved_at, refused_at, refusal_reason, paid_at
+- `expense_claim_items` — id, claim_id, category_id, date, description, amount, receipt_path
+
+**Requires:** Employees
+**Commit:** `feat(modules): expense claims with approval workflow and reimbursement`
+
+---
+
+### Module 9: CRM
+**Contact management, leads, deals pipeline, activity tracking.**
+
+**Features:**
+- CRM Contacts: name, email, phone, company, source (web/referral/email/cold), stage, owner
+- Companies: name, address, contacts list, default currency and stage
+- Deals/Opportunities: name, contact, value, stage, expected close date, status (Open/Won/Lost/Deleted)
+- Pipeline stages: Lead → Qualified → Proposal → Negotiation → Won → Lost (fully customizable)
+- Drag-and-drop pipeline board view
+- Activity logging: calls, meetings, emails, notes, tasks — each with date/time
+- Schedule calls and meetings
+- Create tasks for contacts
+- Send custom emails to contacts
+- Connect invoices to deals (auto-sync with Akaunting customer data)
+- Contact creation auto-syncs to Akaunting customers
+- CRM reports: activity, growth (leads/opportunities/subscribers per period), pipeline conversion rates
+- Activity timeline per contact and per deal
+- Search and filter contacts by any field
+
+**DB Tables:**
+- `crm_contacts` — id, company_id, name, email, phone, crm_company_id, source, stage, owner_user_id, notes
+- `crm_companies` — id, company_id, name, address, currency, default_stage
+- `crm_deals` — id, company_id, crm_contact_id, name, value, stage, expected_close, status, invoice_id
+- `crm_pipeline_stages` — id, company_id, name, position, color
+- `crm_activities` — id, company_id, crm_contact_id, crm_deal_id, type (call/meeting/email/note/task), description, scheduled_at, completed_at
+
+**Requires:** None
+**Commit:** `feat(modules): CRM with contacts, deals, pipeline, activity tracking`
+
+---
+
+### Module 10: CreditDebitNotes
+**Credit notes (customer refunds) and debit notes (vendor returns).**
+
+**Features:**
+- Credit notes: issue to customer → reduces AR balance
+- Debit notes: issue to vendor → reduces AP balance
 - Link to original invoice/bill
-- Apply credit to future invoices
-- Refund processing
-- Auto-update account balances
-- PDF export
+- Credit note line items with description, quantity, price, tax, discount
+- Statuses: Draft → Sent → Open → Partial → Closed → Cancelled
+- Apply credit to future invoices (use as payment method)
+- Refund processing (record cash refund)
+- Convert credit note → invoice, debit note → bill
+- Email credit/debit notes to customer/vendor (PDF attachment)
+- Public link for customer viewing
+- Customizable templates matching invoice branding
+- Auto-update account balances and journal entries
+- Add taxes and discounts
+- Print / Download / Export
+- Notes with reasons for issuance
+- Reports: outstanding credits, issued notes by period
 
-**Commit:** `feat: credit and debit notes`
+**DB Tables:**
+- Uses core `documents` table with `type = 'credit-note'` and `type = 'debit-note'`
+- `credit_note_applications` — id, credit_note_id, invoice_id, amount, date (tracks credit applied to invoices)
 
-### Module 14: Inventory & Materials
-**Track materials, stock levels, and warehouses.**
-
-- Items with: name, SKU, description, category, unit, cost price, sale price
-- Item variants (size, type — e.g., 2x6x8, 2x6x16)
-- Stock tracking: quantity on hand per warehouse
-- Warehouses: Cape May Jobsite, Andrew's Shop
-- Stock adjustments (damaged, missing, returned)
-- Transfer orders between warehouses
-- Barcode generation
-- Low stock alerts
-- Inventory reports: stock status, value, movement
-- Auto-update stock from purchase/sale transactions
-
-**Commit:** `feat: inventory with warehouses, variants, stock tracking`
-
-### Module 15: Budgeting & Forecasting
-**Plan and track financial targets.**
-
-- Create budgets per entity, per period (monthly/quarterly/annual)
-- Budget by category (map to COA accounts)
-- Budget vs actual comparison reports
-- Variance alerts (over-budget notifications)
-- Income and expense forecasting based on trends
-- Project-specific budgets (Cape May phases)
-- Wedding budget tracker (special category)
-- Visual charts: planned vs actual bar charts
-
-**Commit:** `feat: budgeting with variance tracking and forecasting`
-
-### Module 16: Custom Fields
-**Extend any record with custom data.**
-
-- Add custom fields to: invoices, bills, customers, vendors, items, transactions
-- Field types: text, number, date, dropdown, checkbox, URL
-- Required vs optional
-- Show on PDF exports (optional)
-- Filter/search by custom fields
-- **Default custom fields:**
-  - Invoice: PO Number, Job Code
-  - Bill: PO Number, Sub Trade, Job Phase
-  - Vendor: Trade, License #, Insurance Expiry
-  - Item: Supplier, Location
-
-**Commit:** `feat: custom fields for all record types`
-
-### Module 17: Reporting Engine
-**Comprehensive financial reporting.**
-
-- Standard reports: P&L, Balance Sheet, Trial Balance, Cash Flow, AR Aging, AP Aging
-- Custom report builder: select columns, filters, grouping, date range
-- Scheduled reports: auto-generate and email/post weekly/monthly
-- Export: PDF, CSV, Excel
-- Charts and visualizations
-- Comparative reports (period vs period, entity vs entity)
-- Tax summary report (for CPA)
-- 1099 summary report
-- Project profitability report
-- Per-entity and consolidated views
-
-**Commit:** `feat: reporting engine with scheduling and export`
-
-### Module 18: Settings & Configuration
-**System-wide settings.**
-
-- Company settings: name, address, logo, fiscal year, tax ID, industry
-- Localisation: date format, number format, timezone, currency
-- Invoice settings: default terms, numbering, prefix, template
-- Email service: SMTP config for sending invoices/reminders
-- Email templates: customizable for each notification type
-- Categories management
-- Currency management with exchange rates
-- Tax rate management
-- Offline payment methods
-- Backup & restore
-
-**Commit:** `feat: settings and configuration panel`
+**Requires:** DoubleEntry (for journal posting)
+**Commit:** `feat(modules): credit and debit notes with refund tracking`
 
 ---
 
-## API Design (for Bookie Integration)
+### Module 11: Inventory
+**Stock management, warehouses, variants, barcodes, adjustments, transfers.**
 
-Every module exposes a RESTful JSON API. Key endpoints:
+**Features:**
+- Item stock tracking: quantity on hand per warehouse
+- Item variants: size, color, type attributes with unique SKU per variant
+- Item groups: group related items
+- Warehouses: name, address, email, phone, postal code, country
+- Barcode generation: auto-generate and print barcodes per item/variant
+- Default barcode format selection
+- Stock adjustments: add/remove stock for damaged, missing, stolen, returned items
+- Adjustment reasons (customizable list)
+- Transfer orders: move stock between warehouses
+- Transfer statuses: Draft → In Transit → Received → Cancelled
+- Low stock alerts (configurable threshold per item)
+- Auto-update stock from invoice (sold) and bill (purchased) transactions
+- Inventory reports: stock status, stock value, purchase/sales summary, per-item income/expense/quantity by warehouse
+- Inventory history log (all stock movements)
+- Unit of measurement per item
 
-```
-# Auth
-POST   /api/auth/login
-POST   /api/auth/token          (API key for Bookie)
+**DB Tables:**
+- `inventory_warehouses` — id, company_id, name, address, email, phone, enabled
+- `inventory_stock` — id, item_id, warehouse_id, quantity
+- `inventory_variants` — id, item_id, name, sku, attributes_json
+- `inventory_adjustments` — id, company_id, warehouse_id, item_id, quantity, reason, date, description
+- `inventory_transfer_orders` — id, company_id, from_warehouse_id, to_warehouse_id, status, date, description
+- `inventory_transfer_items` — id, transfer_order_id, item_id, quantity
+- `inventory_item_groups` — id, company_id, name, description
+- `inventory_item_group_items` — item_group_id, item_id
 
-# Companies
-GET    /api/companies
-POST   /api/companies
-GET    /api/companies/:id
-PATCH  /api/companies/:id
-
-# Accounts (COA)
-GET    /api/companies/:id/accounts
-POST   /api/companies/:id/accounts
-PATCH  /api/companies/:id/accounts/:accountId
-DELETE /api/companies/:id/accounts/:accountId
-POST   /api/companies/:id/accounts/import   (CSV)
-
-# Transactions & Journals
-GET    /api/companies/:id/journals
-POST   /api/companies/:id/journals
-GET    /api/companies/:id/ledger
-GET    /api/companies/:id/trial-balance
-
-# Invoices
-GET    /api/companies/:id/invoices
-POST   /api/companies/:id/invoices
-PATCH  /api/companies/:id/invoices/:invoiceId
-POST   /api/companies/:id/invoices/:invoiceId/send
-POST   /api/companies/:id/invoices/:invoiceId/payments
-
-# Bills
-GET    /api/companies/:id/bills
-POST   /api/companies/:id/bills
-PATCH  /api/companies/:id/bills/:billId
-POST   /api/companies/:id/bills/:billId/payments
-
-# Estimates
-GET    /api/companies/:id/estimates
-POST   /api/companies/:id/estimates
-PATCH  /api/companies/:id/estimates/:estimateId
-POST   /api/companies/:id/estimates/:estimateId/convert  (→ invoice)
-
-# Receipts
-POST   /api/companies/:id/receipts/upload    (image + OCR)
-GET    /api/companies/:id/receipts
-POST   /api/companies/:id/receipts/:id/process (create transaction)
-
-# Projects
-GET    /api/companies/:id/projects
-POST   /api/companies/:id/projects
-GET    /api/companies/:id/projects/:projectId/pnl
-GET    /api/companies/:id/projects/:projectId/budget
-
-# Reports
-GET    /api/companies/:id/reports/pnl
-GET    /api/companies/:id/reports/balance-sheet
-GET    /api/companies/:id/reports/cash-flow
-GET    /api/companies/:id/reports/trial-balance
-GET    /api/companies/:id/reports/ar-aging
-GET    /api/companies/:id/reports/ap-aging
-
-# Contacts / CRM
-GET    /api/companies/:id/contacts
-POST   /api/companies/:id/contacts
-GET    /api/companies/:id/deals
-POST   /api/companies/:id/deals
-
-# Employees / Payroll
-GET    /api/companies/:id/employees
-POST   /api/companies/:id/employees
-POST   /api/companies/:id/payroll/run
-GET    /api/companies/:id/payroll/history
-
-# Inventory
-GET    /api/companies/:id/items
-POST   /api/companies/:id/items
-GET    /api/companies/:id/warehouses
-POST   /api/companies/:id/stock-adjustments
-
-# Budgets
-GET    /api/companies/:id/budgets
-POST   /api/companies/:id/budgets
-GET    /api/companies/:id/budgets/:budgetId/variance
-```
-
-**All endpoints require `Authorization: Bearer <api-token>` header.**
-**All responses are JSON with consistent pagination, filtering, and sorting.**
+**Requires:** None (enhanced by DoubleEntry for COGS tracking)
+**Commit:** `feat(modules): inventory with warehouses, variants, stock tracking, barcodes`
 
 ---
 
-## Database Schema (High Level)
+### Module 12: Budgets
+**Budget planning, forecasting, and variance tracking.**
 
-### Core Tables
-- `companies` — id, name, address, logo, fiscal_year_start, currency, tax_id, settings_json
-- `users` — id, name, email, password_hash, role
-- `user_companies` — user_id, company_id, role (owner/accountant/agent)
+**Features:**
+- Create budgets per company, per period (monthly/quarterly/annual)
+- Budget by COA account (map planned amounts to each income/expense account)
+- Budget vs actual comparison reports (actual pulled from journal entries)
+- Variance calculation: absolute and percentage
+- Over-budget alerts and notifications
+- Income and expense forecasting (extrapolate trends)
+- Multiple budget scenarios (optimistic/realistic/pessimistic)
+- Copy budget from previous period
+- Budget dashboard widget
+- Visual charts: planned vs actual bar/line charts
+- Export budget reports
 
-### Double-Entry
-- `accounts` — id, company_id, parent_id, code, name, type (asset/liability/equity/income/expense), enabled
-- `journal_entries` — id, company_id, date, reference, description, status
-- `journal_lines` — id, journal_entry_id, account_id, debit, credit, description
-
-### Sales
-- `customers` — id, company_id, name, email, phone, address, tax_id, currency
-- `invoices` — id, company_id, customer_id, number, status, date, due_date, subtotal, tax, discount, total, notes, terms, recurring_id
-- `invoice_items` — id, invoice_id, item_id, description, quantity, price, tax_rate, discount, total
-- `payments` — id, company_id, invoice_id, account_id, date, amount, method, reference
-
-### Purchases
-- `vendors` — id, company_id, name, email, phone, address, tax_id, trade, is_1099
-- `bills` — id, company_id, vendor_id, number, status, date, due_date, subtotal, tax, total, notes
-- `bill_items` — id, bill_id, item_id, description, quantity, price, tax_rate, total
-- `bill_payments` — id, company_id, bill_id, account_id, date, amount, method, reference
-
-### Banking
-- `bank_accounts` — id, company_id, name, number, type, opening_balance, currency
-- `bank_transactions` — id, bank_account_id, date, amount, type (deposit/withdrawal), description, category_id, reconciled
-- `transfers` — id, from_account_id, to_account_id, amount, date, description
-
-### Estimates
-- `estimates` — id, company_id, customer_id, number, status, date, expiry_date, subtotal, tax, total, notes
-- `estimate_items` — id, estimate_id, description, quantity, price, tax_rate, total
-
-### Receipts
-- `receipts` — id, company_id, image_path, ocr_data_json, vendor, date, amount, category_id, status (pending/processed/matched), transaction_id
-
-### Projects
-- `projects` — id, company_id, customer_id, name, description, status, budget, start_date, end_date
-- `milestones` — id, project_id, name, target_date, completed
-- `project_tasks` — id, milestone_id, name, assignee_id, priority, status, estimated_hours
-- `timesheets` — id, task_id, user_id, start, end, hours
-- `project_transactions` — project_id, transaction_type, transaction_id (links invoices/bills to projects)
-
-### HR & Payroll
-- `employees` — id, company_id, name, email, department, role, salary, salary_type, bank_details, hire_date, is_1099, status
-- `departments` — id, company_id, name
-- `pay_calendars` — id, company_id, name, frequency, next_run_date
-- `payroll_runs` — id, pay_calendar_id, period_start, period_end, status, total
-- `payslips` — id, payroll_run_id, employee_id, gross, deductions_json, benefits_json, net, pdf_path
-
-### CRM
-- `crm_contacts` — id, company_id, name, email, phone, company_name, source, stage, owner_id
-- `crm_deals` — id, company_id, contact_id, name, value, stage, expected_close, status
-- `crm_activities` — id, contact_id, deal_id, type (call/meeting/email/note/task), description, date
-
-### Inventory
-- `items` — id, company_id, name, sku, description, category_id, cost_price, sale_price, tax_rate
-- `item_variants` — id, item_id, name, sku, attributes_json
-- `warehouses` — id, company_id, name, address
-- `stock` — id, item_id, warehouse_id, quantity
-- `stock_adjustments` — id, warehouse_id, item_id, quantity, reason, date
-- `transfer_orders` — id, from_warehouse_id, to_warehouse_id, status, date
-- `transfer_order_items` — id, transfer_order_id, item_id, quantity
-
-### Budgets
-- `budgets` — id, company_id, name, period_start, period_end, type (monthly/quarterly/annual)
+**DB Tables:**
+- `budgets` — id, company_id, name, period_start, period_end, status (draft/active/closed)
 - `budget_lines` — id, budget_id, account_id, amount
 
-### Custom Fields
-- `custom_field_definitions` — id, company_id, entity_type, field_name, field_type, required, options_json
-- `custom_field_values` — id, definition_id, entity_id, value
-
-### Other
-- `categories` — id, company_id, name, type (income/expense/item), color
-- `currencies` — id, code, name, rate, symbol
-- `tax_rates` — id, company_id, name, rate, type (normal/compound)
-- `attachments` — id, entity_type, entity_id, file_path, filename, mime_type
-- `recurring_templates` — id, company_id, entity_type, entity_id, frequency, next_date, end_date
-- `audit_log` — id, company_id, user_id, action, entity_type, entity_id, changes_json, timestamp
-- `notifications` — id, user_id, type, message, read, created_at
-- `email_templates` — id, company_id, type, subject, body_html
-- `settings` — id, company_id, key, value
+**Requires:** DoubleEntry (COA accounts for budget lines, journals for actuals)
+**Commit:** `feat(modules): budgeting with variance tracking and forecasting`
 
 ---
 
-## Acceptance Criteria
+### Module 13: SalesPurchaseOrders
+**Sales orders and purchase orders with conversion to invoices/bills.**
 
-### AC1: Core Platform & Auth
-- [ ] Multi-company CRUD, switch between companies
-- [ ] User auth with API token support for Bookie
-- [ ] Dashboard with cash balance, income/expense chart, recent transactions
-- [ ] Global multi-entity dashboard
-- **Commit:** `feat: core platform with multi-company and auth`
+**Features:**
+- Sales Order CRUD: customer, line items, quantities, prices, taxes, discounts, delivery date
+- Purchase Order CRUD: vendor, line items, quantities, prices, taxes, delivery date
+- Order statuses: Draft → Sent → Confirmed → Issued → Cancelled
+- Convert Sales Order → Invoice (one click)
+- Convert Purchase Order → Bill (one click)
+- Convert Estimate → Sales Order (integration with Estimates module)
+- Convert Sales Order → Purchase Order
+- Email orders as PDF to customer/vendor
+- Order templates (customizable per company)
+- Order numbering: auto-increment with prefix (SO-0001, PO-0001)
+- Attach receipts, bills, or supporting files
+- Track customer/vendor transactions per order
+- Add taxes and discounts
+- Reports: sales history, purchase history, by customer, by vendor
+- Import/Export orders
+- Print / Download
 
-### AC2: Double-Entry Accounting
-- [ ] COA with parent/child accounts, import from CSV
-- [ ] Manual journal entries that must balance
-- [ ] Auto-posting from invoices/bills/payments
-- [ ] General Ledger with running balances
-- [ ] Trial Balance report
-- [ ] Balance Sheet report
-- [ ] P&L report (monthly/quarterly/annual)
-- **Commit:** `feat: double-entry accounting engine`
+**DB Tables:**
+- Uses core `documents` table with `type = 'sales-order'` and `type = 'purchase-order'`
+- `order_settings` — company_id, so_prefix, so_next_number, po_prefix, po_next_number
 
-### AC3: Invoicing
-- [ ] Create/send/track invoices with line items
-- [ ] Recurring invoices
-- [ ] Payment recording (partial/full)
-- [ ] PDF generation with customizable template
-- [ ] Email sending
-- [ ] Cape May 20% markup auto-calculation
-- **Commit:** `feat: invoicing with recurring and PDF generation`
+**Requires:** None (enhanced by Estimates, Inventory)
+**Commit:** `feat(modules): sales and purchase orders with invoice/bill conversion`
 
-### AC4: Bills & Vendors
-- [ ] Bill CRUD with vendor management
-- [ ] Payment tracking
-- [ ] 1099 vendor flagging and annual summary
-- **Commit:** `feat: bills, vendor management, 1099 tracking`
+---
 
-### AC5: Banking
-- [ ] Bank accounts with balances
-- [ ] CSV import for bank statements
-- [ ] Transaction categorization rules
-- [ ] Bank reconciliation
-- [ ] Inter-account transfers
-- **Commit:** `feat: banking with CSV import and reconciliation`
+### Module 14: Roles
+**Roles & permissions for granular access control.**
 
-### AC6: Estimates
-- [ ] Create/send estimates with approval workflow
-- [ ] Convert to invoice on approval
-- [ ] Email notifications
-- **Commit:** `feat: estimates with approval and invoice conversion`
+**Features:**
+- Create custom roles beyond the default Admin/User
+- Predefined roles: Manager (full access), Accountant (financial access), Employee (limited), Customer (portal only)
+- Granular permissions per role: View, Create, Edit, Delete for each module/feature
+- Assign roles to users per company
+- Restrict access to specific apps/modules
+- Permission levels for: dashboard, reports, purchases, sales, banking, settings, installed apps
+- Employee role: access to expense claims, time tracking, personal payslips
+- Accountant role: access to journals, ledger, reports, reconciliation (no destructive actions)
+- Customer role: client portal access, view/pay invoices, view proposals
 
-### AC7: Receipts
-- [ ] Upload receipt images via API and web UI
-- [ ] OCR extraction (vendor, date, amount)
-- [ ] Auto-categorize and create transaction
-- [ ] Duplicate detection
-- **Commit:** `feat: receipt management with OCR pipeline`
+**DB Tables:**
+- Extends core `roles` and `permissions` tables
+- `role_module_permissions` — role_id, module_alias, can_view, can_create, can_edit, can_delete
 
-### AC8: Projects
-- [ ] Project with milestones, tasks, budget
-- [ ] Link invoices/bills to project
-- [ ] Project P&L and budget variance
-- [ ] Cape May project preconfigured
-- **Commit:** `feat: project management with job costing`
+**Requires:** None
+**Commit:** `feat(modules): roles and permissions with granular access control`
 
-### AC9: Expense Claims
-- [ ] Submit claims with receipts
-- [ ] Approval workflow
-- [ ] Reimbursement tracking
-- **Commit:** `feat: expense claims with approval workflow`
+---
 
-### AC10: Employees & Payroll
-- [ ] Employee/contractor CRUD with departments
-- [ ] Pay calendars and payroll runs
-- [ ] Payslip PDF generation
-- [ ] Benefits/deductions
-- **Commit:** `feat: employees and payroll`
+### Module 15: BankFeeds
+**Auto-import bank transactions via CSV/OFX/Plaid.**
 
-### AC11: CRM
-- [ ] Contacts, companies, deals pipeline
-- [ ] Activity logging
-- [ ] Connect invoices to deals
-- **Commit:** `feat: CRM with pipeline and activity tracking`
+**Features:**
+- CSV import: upload bank statement CSV, map columns to fields (date, description, amount, type)
+- OFX/QFX import: parse standard bank export files
+- Plaid integration (optional): connect bank accounts for auto-sync via API key
+- GoCardless integration (optional): European bank connections
+- Auto-categorization: rules engine (if vendor contains "Home Depot" → category "Materials")
+- Categorization rules: vendor name match, amount range, description keywords
+- Transaction matching: auto-match imported transactions to existing invoices/bills/payments
+- Reconciliation workflow: review imported transactions, match, categorize, approve
+- Import up to 12 months historical data
+- Dashboard: cash flow, income/expense from bank data
+- Duplicate detection (same date + amount + description)
+- Multi-bank support per company
+- Secure: data stays on your server
 
-### AC12: Credit/Debit Notes
-- [ ] Issue credit/debit notes linked to invoices/bills
-- [ ] Auto-adjust balances
-- **Commit:** `feat: credit and debit notes`
+**DB Tables:**
+- `bank_feed_connections` — id, company_id, bank_account_id, provider (csv/plaid/gocardless), credentials_json, last_sync
+- `bank_feed_imports` — id, connection_id, imported_at, row_count, status
+- `bank_feed_rules` — id, company_id, field (vendor/description/amount), operator (contains/equals/gt/lt), value, category_id, vendor_id
 
-### AC13: Inventory
-- [ ] Items with variants, warehouses, stock tracking
-- [ ] Adjustments and transfer orders
-- [ ] Low stock alerts
-- **Commit:** `feat: inventory management`
+**Requires:** None (enhanced by DoubleEntry for journal posting)
+**Commit:** `feat(modules): bank feeds with CSV/OFX import and auto-categorization`
 
-### AC14: Budgeting
-- [ ] Create budgets by period and category
-- [ ] Budget vs actual variance reports
-- [ ] Over-budget alerts
-- **Commit:** `feat: budgeting and forecasting`
+---
 
-### AC15: Custom Fields
-- [ ] Define custom fields per entity type
-- [ ] Render on forms and PDFs
-- [ ] Filter/search by custom fields
-- **Commit:** `feat: custom fields engine`
+### Module 16: POS (Point of Sale)
+**In-app POS for tracking walk-in sales.**
 
-### AC16: Reporting Engine
-- [ ] All standard reports (P&L, BS, CF, TB, AR/AP Aging)
-- [ ] Scheduled report generation
-- [ ] PDF/CSV export
-- [ ] Comparative and consolidated views
-- **Commit:** `feat: reporting engine with scheduling`
+**Features:**
+- POS interface: product grid or list, add items to order basket
+- Quantity, price, discount per item in basket
+- Barcode scanner support (scan items into basket)
+- Multiple tabs: serve multiple customers simultaneously with timestamps
+- Customer selection: import from existing contacts
+- Payment methods: cash, card, multiple methods per order
+- Receipt generation: print, download, email to customer
+- Configurable receipt paper size
+- Order history: list processed POS orders with date, customer, amount, status
+- Order statuses: Completed, Refunded, Cancelled
+- Refund processing
+- Bill splitting
+- Daily sales summary
+- Auto-create invoice from POS sale
+- Integrates with Inventory (auto-deduct stock)
 
-### AC17: Settings & Email
-- [ ] All company/system settings configurable
-- [ ] SMTP email sending
-- [ ] Email templates
-- **Commit:** `feat: settings, email service, templates`
+**DB Tables:**
+- `pos_orders` — id, company_id, contact_id, status, subtotal, tax, discount, total, payment_method, created_at
+- `pos_order_items` — id, order_id, item_id, name, quantity, price, discount, total
+- `pos_settings` — company_id, receipt_width, default_payment_method, auto_create_invoice
 
-### AC18: Bookie Integration
-- [ ] Bookie can create any record via API
-- [ ] Receipt drop → OCR → transaction pipeline end-to-end
-- [ ] Scheduled report posting to Discord #bookie
-- **Commit:** `feat: bookie agent API integration`
+**Requires:** None (enhanced by Inventory)
+**Commit:** `feat(modules): point of sale with barcode scanning and receipts`
+
+---
+
+### Module 17: Appointments
+**Schedule appointments, manage leave, accept payments.**
+
+**Features:**
+- Appointment forms: customizable fields, send to customers/employees/contacts
+- Appointment scheduling: date, time, duration, location, assigned user
+- Employee leave management: request, approve, track leave days
+- Accept payments through appointment forms
+- Calendar view of appointments
+- Appointment reminders (email)
+- Assign multiple users to manage forms
+- Appointment reports: history, upcoming, by user
+- Customer self-scheduling via public link
+
+**DB Tables:**
+- `appointments` — id, company_id, contact_id, user_id, date, start_time, end_time, location, status, notes
+- `appointment_forms` — id, company_id, name, fields_json, public_link, enabled
+- `leave_requests` — id, company_id, employee_id, approver_id, type (vacation/sick/personal), start_date, end_date, status, reason
+
+**Requires:** Employees
+**Commit:** `feat(modules): appointments and leave management`
+
+---
+
+### Module 18: Stripe
+**Accept invoice payments via Stripe.**
+
+**Features:**
+- Stripe payment gateway on client portal invoices
+- Customer clicks "Pay" → redirected to Stripe checkout
+- Webhooks: auto-record payment on successful charge
+- Auto-sync payment to invoice (mark paid/partial)
+- Supports: credit card, debit card, ACH (US), other Stripe methods
+- Stripe API key configuration in settings
+- Payment history and reconciliation
+- Refund via Stripe
+- Test mode support
+
+**DB Tables:**
+- `stripe_settings` — company_id, api_key_encrypted, webhook_secret, test_mode
+- `stripe_payments` — id, company_id, document_id, stripe_charge_id, amount, status, created_at
+
+**Requires:** None
+**Commit:** `feat(modules): stripe payment gateway for invoices`
+
+---
+
+### Module 19: PayPalSync
+**Sync PayPal transactions into Akaunting.**
+
+**Features:**
+- Connect PayPal account via API credentials
+- Auto-import PayPal transactions as banking transactions
+- Match PayPal payments to invoices
+- Two-way sync: record payment in Akaunting → marked in PayPal context
+- PayPal balance tracking
+- Transaction categorization
+
+**DB Tables:**
+- `paypal_sync_settings` — company_id, client_id_encrypted, client_secret_encrypted, mode, last_sync
+- `paypal_sync_transactions` — id, company_id, paypal_transaction_id, bank_transaction_id, amount, date, status
+
+**Requires:** None
+**Commit:** `feat(modules): paypal sync for transaction import`
+
+---
+
+### Module 20: AutoScheduleReports
+**Auto-generate and email/post reports on a schedule.**
+
+**Features:**
+- Schedule any built-in report (P&L, Balance Sheet, Trial Balance, Cash Flow, AR/AP Aging, etc.)
+- Frequency: daily, weekly, monthly, quarterly, annually
+- Email reports as PDF to specified recipients
+- Webhook/API delivery (post to Discord via Bookie)
+- Report format: PDF, CSV, Excel
+- Custom date ranges (previous month, previous quarter, YTD, custom)
+- Multi-report scheduling (run several reports at once)
+- Schedule management UI: list, edit, enable/disable, delete schedules
+- Execution log: history of generated reports with download links
+
+**DB Tables:**
+- `report_schedules` — id, company_id, report_type, frequency, next_run, recipients_json, format, date_range_type, enabled
+- `report_schedule_runs` — id, schedule_id, ran_at, file_path, status
+
+**Requires:** DoubleEntry (for financial reports)
+**Commit:** `feat(modules): auto-schedule reports with email delivery`
 
 ---
 
 ## Build Order (Codex Task Sequence)
 
-**Phase 1 — Foundation (Tasks 01-05)**
-1. Project scaffold: Next.js + Prisma + PostgreSQL + Docker
-2. Database schema + migrations
-3. Auth system + API token management
-4. Multi-company CRUD + settings
-5. Dashboard layout + navigation
+Each task is one Codex session — fresh context, atomic, completable independently.
 
-**Phase 2 — Accounting Core (Tasks 06-10)**
-6. Chart of Accounts (COA) with CSV import
-7. Journal entries + auto-posting engine
-8. General Ledger view
-9. Trial Balance + Balance Sheet reports
-10. P&L report
+**Phase 1 — Foundation Modules (Tasks 01-06)**
+```
+tasks/01-scaffold-double-entry.md        — Module scaffold + COA + account types
+tasks/02-journal-engine.md               — Journal entries + auto-posting from invoices/bills
+tasks/03-ledger-reports.md               — General Ledger + Trial Balance views
+tasks/04-balance-sheet-pnl.md            — Balance Sheet + P&L report pages
+tasks/05-custom-fields.md                — Custom fields module (all entity types)
+tasks/06-employees-departments.md        — Employees + departments module
+```
 
-**Phase 3 — Sales & Purchases (Tasks 11-15)**
-11. Customer management
-12. Invoice CRUD + line items + PDF generation
-13. Invoice sending + recurring
-14. Vendor management + 1099 tracking
-15. Bills + bill payments
+**Phase 2 — Sales & Documents (Tasks 07-10)**
+```
+tasks/07-estimates.md                    — Estimates with approval + convert to invoice
+tasks/08-credit-debit-notes.md           — Credit/debit notes linked to invoices/bills
+tasks/09-sales-purchase-orders.md        — SO/PO with conversion to invoice/bill
+tasks/10-receipts-ocr.md                 — Receipt upload + OCR + transaction creation
+```
 
-**Phase 4 — Banking & Receipts (Tasks 16-19)**
-16. Bank accounts + transactions
-17. CSV import + categorization rules
-18. Reconciliation engine
-19. Receipt upload + OCR + auto-transaction
+**Phase 3 — Banking & Payments (Tasks 11-14)**
+```
+tasks/11-bank-feeds-csv.md               — CSV/OFX import + categorization rules
+tasks/12-bank-feeds-matching.md          — Transaction matching + reconciliation
+tasks/13-stripe-gateway.md               — Stripe payment gateway
+tasks/14-paypal-sync.md                  — PayPal transaction sync
+```
 
-**Phase 5 — Estimates & Projects (Tasks 20-23)**
-20. Estimates with approval workflow
-21. Estimate → Invoice conversion
-22. Projects with milestones + tasks
-23. Project P&L + budget tracking
+**Phase 4 — Projects & HR (Tasks 15-19)**
+```
+tasks/15-projects-milestones.md          — Projects + milestones + tasks
+tasks/16-projects-time-budget.md         — Time tracking + budget vs actual
+tasks/17-expense-claims.md               — Expense claims with approval
+tasks/18-payroll-calendars.md            — Pay calendars + payroll runs
+tasks/19-payroll-payslips.md             — Payslip generation + benefits/deductions
+```
 
-**Phase 6 — HR & Payroll (Tasks 24-27)**
-24. Employees + departments
-25. Expense claims + approval
-26. Pay calendars + payroll runs
-27. Payslip generation
+**Phase 5 — CRM & Inventory (Tasks 20-24)**
+```
+tasks/20-crm-contacts-companies.md       — CRM contacts + companies
+tasks/21-crm-deals-pipeline.md           — Deals + pipeline + activities
+tasks/22-inventory-warehouses.md         — Inventory items + warehouses + stock
+tasks/23-inventory-variants-barcodes.md  — Variants + barcodes + adjustments + transfers
+tasks/24-budgets.md                      — Budget planning + variance reports
+```
 
-**Phase 7 — CRM & Inventory (Tasks 28-31)**
-28. CRM contacts + deals + pipeline
-29. Activity logging
-30. Inventory items + variants + warehouses
-31. Stock tracking + adjustments + transfers
-
-**Phase 8 — Budgets, Custom Fields, Reporting (Tasks 32-35)**
-32. Budget CRUD + variance reports
-33. Custom fields engine
-34. Reporting engine + scheduled generation
-35. Credit/Debit notes
-
-**Phase 9 — Integration & Polish (Tasks 36-38)**
-36. Bookie API integration + Discord posting
-37. Email service + templates
-38. Docker deployment + systemd service
+**Phase 6 — Operations & Polish (Tasks 25-28)**
+```
+tasks/25-roles-permissions.md            — Roles & granular permissions
+tasks/26-pos.md                          — Point of Sale
+tasks/27-appointments-leave.md           — Appointments + leave management
+tasks/28-auto-schedule-reports.md        — Scheduled report generation + delivery
+```
 
 ---
 
-## File List
-- `PRD.md` — this file
-- `tasks/` — atomic task files (01 through 38)
-- `src/` — Next.js application source
-- `prisma/` — schema + migrations
-- `docker/` — Dockerfile + docker-compose
-- `docs/` — API documentation
+## Acceptance Criteria (Summary)
+
+| # | Module | Key Test | Commit |
+|---|--------|----------|--------|
+| AC1 | DoubleEntry | COA populated, journal entry creates balanced debit/credit, P&L generates | `feat: double-entry` |
+| AC2 | Estimates | Create estimate, customer approves via link, converts to invoice | `feat: estimates` |
+| AC3 | CustomFields | Add text/date/select fields to invoices, fields render on form + PDF | `feat: custom-fields` |
+| AC4 | Receipts | Upload image, OCR extracts vendor/amount/date, creates bill | `feat: receipts` |
+| AC5 | Employees | Add employee with department and salary, shows in directory | `feat: employees` |
+| AC6 | Payroll | Run payroll, generate PDF payslip, posts journal entry | `feat: payroll` |
+| AC7 | Projects | Create project, link invoice, budget vs actual shows variance | `feat: projects` |
+| AC8 | ExpenseClaims | Submit claim, approver approves, marked for reimbursement | `feat: expense-claims` |
+| AC9 | CRM | Add contact, create deal, move through pipeline stages | `feat: crm` |
+| AC10 | CreditDebitNotes | Issue credit note, apply as payment to future invoice | `feat: credit-debit-notes` |
+| AC11 | Inventory | Add item to warehouse, stock decreases on invoice | `feat: inventory` |
+| AC12 | Budgets | Create budget, view variance report against actuals | `feat: budgets` |
+| AC13 | SalesPurchaseOrders | Create SO, convert to invoice; create PO, convert to bill | `feat: sales-purchase-orders` |
+| AC14 | Roles | Create custom role, user can only access permitted modules | `feat: roles` |
+| AC15 | BankFeeds | Import CSV, auto-categorize, match to existing transactions | `feat: bank-feeds` |
+| AC16 | POS | Add items to basket, process sale, print receipt | `feat: pos` |
+| AC17 | Appointments | Schedule appointment, employee requests leave | `feat: appointments` |
+| AC18 | Stripe | Customer pays invoice via Stripe, payment auto-recorded | `feat: stripe` |
+| AC19 | PayPalSync | PayPal transactions imported and matched | `feat: paypal-sync` |
+| AC20 | AutoScheduleReports | Schedule monthly P&L, auto-generates and emails PDF | `feat: auto-schedule-reports` |
+
+---
 
 ## Dependencies
-- PostgreSQL (new Docker container)
-- Node.js 20+ (already on server)
-- OCR: Tesseract.js or GPT Vision via Bookie's existing pipeline
-- SMTP for email sending (Gmail or Resend)
-- No external paid services required
+- Akaunting Docker container with write access to `/var/www/html/modules/`
+- MariaDB with migration permissions
+- PHP 8.1+ with artisan access
+- Tesseract.js or API key for receipt OCR
+- Stripe API key (when ready to accept payments)
+- No paid Akaunting licenses required
 
 ## Timeline Estimate
-- Phase 1-2: ~12-16 hours (foundation + accounting core)
-- Phase 3-4: ~10-14 hours (sales, purchases, banking, receipts)
-- Phase 5-6: ~10-12 hours (estimates, projects, HR, payroll)
-- Phase 7-8: ~10-12 hours (CRM, inventory, budgets, reporting)
-- Phase 9: ~4-6 hours (integration, deployment)
-- **Total: ~50-60 hours of Codex time, ~1-2 weeks**
+- Phase 1 (Foundation): ~15-20 hours
+- Phase 2 (Sales/Docs): ~10-12 hours
+- Phase 3 (Banking): ~8-10 hours
+- Phase 4 (Projects/HR): ~12-15 hours
+- Phase 5 (CRM/Inventory): ~12-15 hours
+- Phase 6 (Operations): ~8-10 hours
+- **Total: ~65-80 hours of Codex time, ~2-3 weeks**
 
 ## Risks
-- Double-entry engine is the hardest part — accounting math must be correct
-- Large number of tables/relationships — schema design is critical
-- 38 tasks is a lot of Codex sessions — potential for context drift between tasks
-- OCR quality varies — need fallback to manual entry
-- Scope creep: each module could easily expand. Stay disciplined on MVP.
+- Akaunting's internal APIs may not be fully documented — may need to reverse-engineer core event hooks
+- Double-Entry auto-posting (hooking into invoice/bill creation) requires deep integration with core Document model
+- Module UI must match Akaunting's existing Blade/Tailwind component system for consistency
+- MariaDB schema additions must not conflict with future Akaunting core updates
+- Receipt OCR quality varies — Tesseract is free but less accurate than paid APIs
+- 28 Codex tasks is significant — careful task isolation prevents context drift
 
 ## Notes
-- This replaces Akaunting entirely (or runs alongside it during transition)
-- Feature spec derived from 37 screenshots of Akaunting's paid modules + web scraping
-- Docker container runs on clawserv alongside existing services
-- Bookie agent is the primary automated user — web UI is for Andrew's manual use
-- Name: **BookieBooks** (working title, can change)
+- Feature spec derived from: 37 screenshots, web scraping of all app pages on akaunting.com, plans page feature matrix, and developer documentation
+- All modules are native Akaunting Laravel modules — same architecture as OfflinePayments/PaypalStandard
+- When done, the system has full parity with Akaunting Ultimate Cloud ($$$) — for free
+- Bookie agent integrates via Akaunting's REST API (already exists for core features, modules extend it)
