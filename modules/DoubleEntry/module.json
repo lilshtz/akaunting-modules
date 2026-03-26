@@ -1,0 +1,18 @@
+{
+    "alias": "double-entry",
+    "icon": "balance",
+    "version": "1.0.0",
+    "active": 1,
+    "providers": [
+        "Modules\\DoubleEntry\\Providers\\Event",
+        "Modules\\DoubleEntry\\Providers\\Main"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "reports": [],
+    "widgets": [],
+    "settings": [],
+    "extra-modules": {},
+    "routes": {}
+}

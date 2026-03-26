@@ -1,0 +1,4 @@
+# progress.txt — Append-only learnings across task iterations
+# Each completed task appends what it learned here.
+# Codex reads this at the start of each task for accumulated context.
+# Format: [timestamp] TASK: name | STATUS: pass/fail | LEARNING: what happened
