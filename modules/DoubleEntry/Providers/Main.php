@@ -2,7 +2,9 @@
 
 namespace Modules\DoubleEntry\Providers;
 
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\ServiceProvider as Provider;
+use Modules\DoubleEntry\Console\ProcessRecurringJournals;
 
 class Main extends Provider
 {
@@ -11,6 +13,8 @@ class Main extends Provider
         $this->loadTranslations();
         $this->loadViews();
         $this->loadMigrations();
+        $this->loadCommands();
+        $this->scheduleCommands();
     }
 
     public function register(): void
@@ -42,6 +46,21 @@ class Main extends Provider
         foreach (['admin.php', 'portal.php'] as $route) {
             $this->loadRoutesFrom(__DIR__ . '/../Routes/' . $route);
         }
+    }
+
+    protected function loadCommands(): void
+    {
+        $this->commands([
+            ProcessRecurringJournals::class,
+        ]);
+    }
+
+    protected function scheduleCommands(): void
+    {
+        $this->app->booted(function () {
+            $schedule = $this->app->make(Schedule::class);
+            $schedule->command('double-entry:process-recurring')->daily();
+        });
     }
 
     public function provides(): array
