@@ -46,4 +46,8 @@ Route::admin('bank-feeds', function () {
     Route::get('settings', 'Settings@index')->name('settings.index');
     Route::post('settings', 'Settings@update')->name('settings.update');
     Route::delete('settings/mappings/{accountId}', 'Settings@deleteMapping')->name('settings.delete-mapping');
+    // Alias routes for Akaunting core compatibility (core expects bank-connections.*)
+    Route::get('bank-connections', 'Imports@index')->name('bank-connections.index');
+    Route::get('bank-connections/create', 'Imports@create')->name('bank-connections.create');
+
 }, ['namespace' => 'Modules\BankFeeds\Http\Controllers']);
