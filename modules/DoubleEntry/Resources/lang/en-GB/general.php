@@ -37,6 +37,11 @@ return [
     'import_accounts' => 'Import Accounts',
     'add_line' => 'Add Line',
     'remove_line' => 'Remove Line',
+    'recurring' => 'Recurring',
+    'recurring_frequency' => 'Recurring Frequency',
+    'next_run_at' => 'Next Run',
+    'opening_balance_as_of' => 'Opening Balance',
+    'import_help' => 'Use QuickBooks-style columns like Code, Name, Type, Description, Opening Balance.',
 
     'types' => [
         'asset' => 'Asset',
@@ -52,11 +57,32 @@ return [
         'voided' => 'Voided',
     ],
 
+    'frequencies' => [
+        'weekly' => 'Weekly',
+        'monthly' => 'Monthly',
+        'quarterly' => 'Quarterly',
+        'yearly' => 'Yearly',
+    ],
+
+    'defaults' => [
+        'bank_current' => 'Bank (Current Account)',
+        'accounts_receivable' => 'Accounts Receivable',
+        'accounts_payable' => 'Accounts Payable',
+        'sales_income' => 'Sales Income',
+        'cost_of_sales' => 'Cost of Sales',
+        'sales_tax' => 'Sales Tax',
+        'purchase_tax' => 'Purchase Tax',
+        'retained_earnings' => 'Retained Earnings',
+        'owners_equity' => "Owner's Equity",
+        'undeposited_funds' => 'Undeposited Funds',
+    ],
+
     'imported' => ':count accounts imported successfully',
 
     'error' => [
         'has_transactions' => 'This account has journal entries and cannot be deleted.',
         'not_balanced' => 'Journal entry debits and credits must balance.',
+        'invalid_line' => 'Each journal line must have either a debit or a credit amount.',
         'posted_journal' => 'Posted journal entries cannot be deleted. Void them instead.',
     ],
 ];

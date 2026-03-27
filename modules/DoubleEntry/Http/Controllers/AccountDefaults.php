@@ -19,7 +19,10 @@ class AccountDefaults extends Controller
         $accounts = Account::where('company_id', company_id())
             ->enabled()
             ->orderBy('code')
-            ->get();
+            ->get()
+            ->mapWithKeys(function (Account $account) {
+                return [$account->id => $account->code . ' - ' . $account->name];
+            });
 
         $defaults = AccountDefault::where('company_id', company_id())
             ->pluck('account_id', 'type')

@@ -20,33 +20,35 @@ class TransferCreated
     public function handle(Event $event)
     {
         $transfer = $event->transfer;
-
         $companyId = $transfer->company_id;
+        $amount = (float) ($transfer->amount ?? $transfer->expense_transaction->amount ?? 0);
 
         $bankDefault = AccountDefault::where('company_id', $companyId)
             ->where('type', 'bank_current')->first();
 
-        if (!$bankDefault) {
+        if (! $bankDefault || $amount <= 0) {
             return;
         }
 
-        $journal = Journal::create([
+        $journal = Journal::firstOrCreate([
             'company_id' => $companyId,
+            'reference' => 'transfer:' . $transfer->id,
+        ], [
             'number' => 'JE-XFR-' . strtoupper(substr(md5($transfer->id), 0, 8)),
             'date' => $transfer->transferred_at ?? $transfer->created_at,
             'description' => 'Transfer #' . $transfer->id,
-            'reference' => 'transfer:' . $transfer->id,
             'status' => 'posted',
         ]);
 
-        // Debit destination bank, credit source bank
-        // Using the same bank default for simplicity — real implementation
-        // would map Akaunting bank accounts to COA accounts
+        if ($journal->lines()->exists()) {
+            return;
+        }
+
         JournalLine::create([
             'company_id' => $companyId,
             'journal_id' => $journal->id,
             'account_id' => $bankDefault->account_id,
-            'debit' => $transfer->expense_transaction->amount ?? 0,
+            'debit' => $amount,
             'credit' => 0,
             'description' => 'Transfer in',
         ]);
@@ -56,7 +58,7 @@ class TransferCreated
             'journal_id' => $journal->id,
             'account_id' => $bankDefault->account_id,
             'debit' => 0,
-            'credit' => $transfer->expense_transaction->amount ?? 0,
+            'credit' => $amount,
             'description' => 'Transfer out',
         ]);
     }

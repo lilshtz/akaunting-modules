@@ -58,6 +58,9 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('reference')->nullable(); // e.g. "invoice:123"
             $table->string('status', 20)->default('draft'); // draft, posted, voided
+            $table->boolean('is_recurring')->default(false);
+            $table->string('recurring_frequency', 20)->nullable();
+            $table->datetime('next_run_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
@@ -65,6 +68,7 @@ return new class extends Migration
             $table->index(['company_id', 'number']);
             $table->index(['company_id', 'status']);
             $table->index(['company_id', 'date']);
+            $table->index(['company_id', 'is_recurring']);
             $table->index('reference');
         });
 

@@ -20,16 +20,11 @@ class DocumentUpdated
         $document = $event->document;
         $reference = $document->type . ':' . $document->id;
 
-        // Void existing journals for this document
         Journal::where('company_id', $document->company_id)
             ->where('reference', $reference)
             ->where('status', 'posted')
             ->update(['status' => 'voided']);
 
-        // Re-create if not cancelled/draft
-        if (!in_array($document->status, ['draft', 'cancelled'])) {
-            $listener = new DocumentCreated();
-            $listener->handle(new \App\Events\Document\DocumentCreated($document));
-        }
+        (new DocumentCreated())->createFromDocument($document);
     }
 }

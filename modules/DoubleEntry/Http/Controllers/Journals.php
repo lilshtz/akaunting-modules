@@ -3,6 +3,7 @@
 namespace Modules\DoubleEntry\Http\Controllers;
 
 use App\Abstracts\Http\Controller;
+use Illuminate\Support\Facades\DB;
 use Modules\DoubleEntry\Http\Requests\JournalStore;
 use Modules\DoubleEntry\Http\Requests\JournalUpdate;
 use Modules\DoubleEntry\Models\Account;
@@ -29,10 +30,7 @@ class Journals extends Controller
      */
     public function create()
     {
-        $accounts = Account::where('company_id', company_id())
-            ->enabled()
-            ->orderBy('code')
-            ->get();
+        $accounts = $this->getAccountOptions();
 
         return view('double-entry::journals.create', compact('accounts'));
     }
@@ -42,27 +40,7 @@ class Journals extends Controller
      */
     public function store(JournalStore $request)
     {
-        $journal = Journal::create([
-            'company_id' => company_id(),
-            'number' => $request->get('number'),
-            'date' => $request->get('date'),
-            'description' => $request->get('description'),
-            'reference' => $request->get('reference'),
-            'status' => $request->get('status', 'draft'),
-        ]);
-
-        // Create journal lines
-        $lines = $request->get('lines', []);
-        foreach ($lines as $line) {
-            JournalLine::create([
-                'company_id' => company_id(),
-                'journal_id' => $journal->id,
-                'account_id' => $line['account_id'],
-                'debit' => $line['debit'] ?? 0,
-                'credit' => $line['credit'] ?? 0,
-                'description' => $line['description'] ?? null,
-            ]);
-        }
+        $journal = DB::transaction(fn () => $this->persistJournal(new Journal(), $request));
 
         $message = trans('messages.success.added', ['type' => trans('double-entry::general.journal_entry')]);
 
@@ -97,10 +75,7 @@ class Journals extends Controller
             ->with('lines')
             ->findOrFail($id);
 
-        $accounts = Account::where('company_id', company_id())
-            ->enabled()
-            ->orderBy('code')
-            ->get();
+        $accounts = $this->getAccountOptions();
 
         return view('double-entry::journals.edit', compact('journal', 'accounts'));
     }
@@ -112,28 +87,7 @@ class Journals extends Controller
     {
         $journal = Journal::where('company_id', company_id())->findOrFail($id);
 
-        $journal->update([
-            'number' => $request->get('number'),
-            'date' => $request->get('date'),
-            'description' => $request->get('description'),
-            'reference' => $request->get('reference'),
-            'status' => $request->get('status', 'draft'),
-        ]);
-
-        // Delete old lines and re-create
-        $journal->lines()->delete();
-
-        $lines = $request->get('lines', []);
-        foreach ($lines as $line) {
-            JournalLine::create([
-                'company_id' => company_id(),
-                'journal_id' => $journal->id,
-                'account_id' => $line['account_id'],
-                'debit' => $line['debit'] ?? 0,
-                'credit' => $line['credit'] ?? 0,
-                'description' => $line['description'] ?? null,
-            ]);
-        }
+        DB::transaction(fn () => $this->persistJournal($journal, $request));
 
         $message = trans('messages.success.updated', ['type' => trans('double-entry::general.journal_entry')]);
 
@@ -154,7 +108,6 @@ class Journals extends Controller
     {
         $journal = Journal::where('company_id', company_id())->findOrFail($id);
 
-        // Only allow deletion of draft journals
         if ($journal->status === 'posted') {
             return response()->json([
                 'success' => false,
@@ -176,5 +129,47 @@ class Journals extends Controller
             'message' => $message,
             'redirect' => route('double-entry.journals.index'),
         ]);
+    }
+
+    protected function persistJournal(Journal $journal, $request): Journal
+    {
+        $journal->fill([
+            'company_id' => company_id(),
+            'number' => $request->get('number'),
+            'date' => $request->get('date'),
+            'description' => $request->get('description'),
+            'reference' => $request->get('reference'),
+            'status' => $request->get('status', 'draft'),
+            'is_recurring' => (bool) $request->get('is_recurring', false),
+            'recurring_frequency' => $request->get('is_recurring') ? $request->get('recurring_frequency') : null,
+            'next_run_at' => $request->get('is_recurring') ? $request->get('next_run_at') : null,
+        ])->save();
+
+        $journal->lines()->delete();
+
+        foreach ($request->get('lines', []) as $line) {
+            JournalLine::create([
+                'company_id' => company_id(),
+                'journal_id' => $journal->id,
+                'account_id' => $line['account_id'],
+                'debit' => $line['debit'] ?? 0,
+                'credit' => $line['credit'] ?? 0,
+                'description' => $line['description'] ?? null,
+            ]);
+        }
+
+        return $journal->load('lines.account');
+    }
+
+    protected function getAccountOptions()
+    {
+        return Account::where('company_id', company_id())
+            ->enabled()
+            ->orderBy('code')
+            ->get()
+            ->mapWithKeys(function (Account $account) {
+                return [$account->id => $account->code . ' - ' . $account->name];
+            })
+            ->toArray();
     }
 }

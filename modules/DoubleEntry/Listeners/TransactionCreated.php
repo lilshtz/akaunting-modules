@@ -21,7 +21,6 @@ class TransactionCreated
     {
         $transaction = $event->transaction;
 
-        // Skip transfer transactions — handled by TransferCreated
         if (str_contains($transaction->type, 'transfer')) {
             return;
         }
@@ -33,8 +32,8 @@ class TransactionCreated
     {
         $companyId = $transaction->company_id;
         $isIncome = str_contains($transaction->type, 'income');
+        $reference = 'transaction:' . $transaction->id;
 
-        // Get bank account default
         $bankDefault = AccountDefault::where('company_id', $companyId)
             ->where('type', 'bank_current')->first();
 
@@ -64,14 +63,19 @@ class TransactionCreated
             $creditAccountId = $bankDefault->account_id;
         }
 
-        $journal = Journal::create([
+        $journal = Journal::firstOrCreate([
             'company_id' => $companyId,
+            'reference' => $reference,
+        ], [
             'number' => 'JE-TXN-' . strtoupper(substr(md5($transaction->id . $transaction->type), 0, 8)),
             'date' => $transaction->paid_at ?? $transaction->created_at,
             'description' => ($isIncome ? 'Income' : 'Expense') . ' payment #' . $transaction->number,
-            'reference' => 'transaction:' . $transaction->id,
             'status' => 'posted',
         ]);
+
+        if ($journal->lines()->exists()) {
+            return;
+        }
 
         JournalLine::create([
             'company_id' => $companyId,

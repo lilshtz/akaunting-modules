@@ -15,7 +15,6 @@ class Main extends Provider
     {
         $this->loadTranslations();
         $this->loadViews();
-        $this->loadMigrations();
     }
 
     /**
@@ -46,16 +45,6 @@ class Main extends Provider
     public function loadTranslations()
     {
         $this->loadTranslationsFrom(__DIR__ . '/../Resources/lang', 'double-entry');
-    }
-
-    /**
-     * Load migrations.
-     *
-     * @return void
-     */
-    public function loadMigrations()
-    {
-        $this->loadMigrationsFrom(__DIR__ . '/../Database/Migrations');
     }
 
     /**

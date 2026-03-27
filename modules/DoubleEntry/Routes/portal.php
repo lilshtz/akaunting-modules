@@ -1,4 +1,13 @@
 <?php
 
-// Portal routes for Double-Entry module
-// Currently no portal-facing routes are needed.
+use Illuminate\Support\Facades\Route;
+
+/**
+ * 'portal' middleware and 'portal/double-entry' prefix applied to all routes (including names)
+ *
+ * @see \App\Providers\Route::register
+ */
+
+Route::portal('double-entry', function () {
+    //
+});

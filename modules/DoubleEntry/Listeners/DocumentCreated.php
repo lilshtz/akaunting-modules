@@ -19,21 +19,19 @@ class DocumentCreated
      */
     public function handle(Event $event)
     {
-        $document = $event->document;
+        $this->createFromDocument($event->document);
+    }
 
-        if ($document->status === 'draft') {
+    public function createFromDocument($document)
+    {
+        if (in_array($document->status, ['draft', 'cancelled'], true)) {
             return;
         }
 
-        $this->createJournalFromDocument($document);
-    }
-
-    protected function createJournalFromDocument($document)
-    {
         $companyId = $document->company_id;
         $isInvoice = str_contains($document->type, 'invoice');
+        $reference = $document->type . ':' . $document->id;
 
-        // Determine accounts based on document type
         if ($isInvoice) {
             $receivableDefault = AccountDefault::where('company_id', $companyId)
                 ->where('type', 'accounts_receivable')->first();
@@ -47,7 +45,6 @@ class DocumentCreated
             $debitAccountId = $receivableDefault->account_id;
             $creditAccountId = $incomeDefault->account_id;
         } else {
-            // Bill
             $payableDefault = AccountDefault::where('company_id', $companyId)
                 ->where('type', 'accounts_payable')->first();
             $expenseDefault = AccountDefault::where('company_id', $companyId)
@@ -61,14 +58,19 @@ class DocumentCreated
             $creditAccountId = $payableDefault->account_id;
         }
 
-        $journal = Journal::create([
+        $journal = Journal::firstOrCreate([
             'company_id' => $companyId,
+            'reference' => $reference,
+        ], [
             'number' => 'JE-AUTO-' . strtoupper(substr(md5($document->id . $document->type), 0, 8)),
             'date' => $document->issued_at ?? $document->created_at,
             'description' => ($isInvoice ? 'Invoice' : 'Bill') . ' #' . $document->document_number,
-            'reference' => $document->type . ':' . $document->id,
             'status' => 'posted',
         ]);
+
+        if ($journal->lines()->exists()) {
+            return;
+        }
 
         JournalLine::create([
             'company_id' => $companyId,

@@ -11,6 +11,8 @@ class Account extends Model
 
     protected $table = 'double_entry_accounts';
 
+    protected $with = ['children'];
+
     protected $fillable = [
         'company_id',
         'parent_id',
@@ -34,7 +36,7 @@ class Account extends Model
 
     public function children()
     {
-        return $this->hasMany(static::class, 'parent_id');
+        return $this->hasMany(static::class, 'parent_id')->orderBy('code');
     }
 
     public function journalLines()
@@ -69,12 +71,14 @@ class Account extends Model
     public function getBalanceAttribute()
     {
         $debits = $this->journalLines()
+            ->where('company_id', $this->company_id)
             ->whereHas('journal', function ($q) {
                 $q->where('status', 'posted');
             })
             ->sum('debit');
 
         $credits = $this->journalLines()
+            ->where('company_id', $this->company_id)
             ->whereHas('journal', function ($q) {
                 $q->where('status', 'posted');
             })

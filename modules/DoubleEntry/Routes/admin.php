@@ -9,8 +9,9 @@ use Illuminate\Support\Facades\Route;
  */
 
 Route::admin('double-entry', function () {
+    Route::get('accounts/import', 'Accounts@import')->name('accounts.import');
+    Route::post('accounts/import', 'Accounts@storeImport')->name('accounts.store-import');
     Route::resource('accounts', 'Accounts');
-    Route::post('accounts/import', 'Accounts@import')->name('accounts.import');
 
     Route::resource('journals', 'Journals');
 

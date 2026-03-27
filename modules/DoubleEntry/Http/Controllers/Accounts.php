@@ -3,6 +3,7 @@
 namespace Modules\DoubleEntry\Http\Controllers;
 
 use App\Abstracts\Http\Controller;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request as BaseRequest;
 use Modules\DoubleEntry\Http\Requests\AccountStore;
 use Modules\DoubleEntry\Http\Requests\AccountUpdate;
@@ -17,7 +18,6 @@ class Accounts extends Controller
     {
         $accounts = Account::where('company_id', company_id())
             ->whereNull('parent_id')
-            ->with('children')
             ->orderBy('code')
             ->get()
             ->groupBy('type');
@@ -27,26 +27,9 @@ class Accounts extends Controller
         return view('double-entry::accounts.index', compact('accounts', 'types'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        $types = [
-            'asset' => trans('double-entry::general.types.asset'),
-            'liability' => trans('double-entry::general.types.liability'),
-            'equity' => trans('double-entry::general.types.equity'),
-            'income' => trans('double-entry::general.types.income'),
-            'expense' => trans('double-entry::general.types.expense'),
-        ];
-
-        $parentAccounts = Account::where('company_id', company_id())
-            ->enabled()
-            ->orderBy('code')
-            ->pluck('name', 'id')
-            ->prepend(trans('general.none'), '');
-
-        return view('double-entry::accounts.create', compact('types', 'parentAccounts'));
+        return view('double-entry::accounts.create', $this->formData());
     }
 
     /**
@@ -77,29 +60,14 @@ class Accounts extends Controller
         ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(int $id)
     {
         $account = Account::where('company_id', company_id())->findOrFail($id);
 
-        $types = [
-            'asset' => trans('double-entry::general.types.asset'),
-            'liability' => trans('double-entry::general.types.liability'),
-            'equity' => trans('double-entry::general.types.equity'),
-            'income' => trans('double-entry::general.types.income'),
-            'expense' => trans('double-entry::general.types.expense'),
-        ];
-
-        $parentAccounts = Account::where('company_id', company_id())
-            ->where('id', '!=', $id)
-            ->enabled()
-            ->orderBy('code')
-            ->pluck('name', 'id')
-            ->prepend(trans('general.none'), '');
-
-        return view('double-entry::accounts.edit', compact('account', 'types', 'parentAccounts'));
+        return view('double-entry::accounts.edit', array_merge(
+            ['account' => $account],
+            $this->formData($id)
+        ));
     }
 
     /**
@@ -138,7 +106,6 @@ class Accounts extends Controller
     {
         $account = Account::where('company_id', company_id())->findOrFail($id);
 
-        // Prevent deletion if account has journal lines
         if ($account->journalLines()->exists()) {
             return response()->json([
                 'success' => false,
@@ -161,10 +128,12 @@ class Accounts extends Controller
         ]);
     }
 
-    /**
-     * Import accounts from CSV.
-     */
-    public function import(BaseRequest $request)
+    public function import()
+    {
+        return view('double-entry::accounts.import');
+    }
+
+    public function storeImport(BaseRequest $request): RedirectResponse
     {
         $request->validate([
             'file' => 'required|file|mimes:csv,txt',
@@ -180,18 +149,24 @@ class Accounts extends Controller
                 continue;
             }
 
-            $data = array_combine(array_map('strtolower', $header), $row);
+            $data = array_combine(array_map(static fn ($value) => strtolower(trim($value)), $header), $row);
+            $code = trim((string) ($data['code'] ?? $data['account code'] ?? ''));
+            $name = trim((string) ($data['name'] ?? $data['account name'] ?? ''));
+
+            if ($code === '' || $name === '') {
+                continue;
+            }
 
             Account::firstOrCreate(
                 [
                     'company_id' => company_id(),
-                    'code' => $data['code'] ?? $data['account code'] ?? '',
+                    'code' => $code,
                 ],
                 [
                     'company_id' => company_id(),
                     'type' => strtolower($data['type'] ?? $data['account type'] ?? 'asset'),
-                    'code' => $data['code'] ?? $data['account code'] ?? '',
-                    'name' => $data['name'] ?? $data['account name'] ?? '',
+                    'code' => $code,
+                    'name' => $name,
                     'description' => $data['description'] ?? '',
                     'opening_balance' => (float) ($data['opening_balance'] ?? $data['balance'] ?? 0),
                     'enabled' => true,
@@ -208,5 +183,23 @@ class Accounts extends Controller
         flash($message)->success();
 
         return redirect()->route('double-entry.accounts.index');
+    }
+
+    protected function formData(?int $exceptId = null): array
+    {
+        $query = Account::where('company_id', company_id())
+            ->enabled()
+            ->orderBy('code');
+
+        if ($exceptId) {
+            $query->where('id', '!=', $exceptId);
+        }
+
+        return [
+            'types' => collect(trans('double-entry::general.types'))->toArray(),
+            'parentAccounts' => $query->get()->mapWithKeys(function (Account $account) {
+                return [$account->id => $account->code . ' - ' . $account->name];
+            })->prepend(trans('general.none'), '')->toArray(),
+        ];
     }
 }

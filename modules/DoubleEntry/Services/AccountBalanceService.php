@@ -15,7 +15,9 @@ class AccountBalanceService
         $ledger = [];
 
         foreach ($accounts as $account) {
+            $openingBalance = $this->getAccountBalance($account, now()->parse($startDate)->subDay()->toDateString());
             $lines = JournalLine::where('account_id', $account->id)
+                ->where('company_id', $account->company_id)
                 ->whereHas('journal', function ($q) use ($startDate, $endDate) {
                     $q->where('status', 'posted')
                         ->whereBetween('date', [$startDate, $endDate]);
@@ -29,7 +31,7 @@ class AccountBalanceService
             }
 
             $isDebitNormal = in_array($account->type, ['asset', 'expense']);
-            $runningBalance = $account->opening_balance ?? 0;
+            $runningBalance = $openingBalance;
             $entries = [];
 
             foreach ($lines as $line) {
@@ -51,6 +53,7 @@ class AccountBalanceService
 
             $ledger[] = [
                 'account' => $account,
+                'opening_balance' => $openingBalance,
                 'entries' => $entries,
                 'total_debit' => $lines->sum('debit'),
                 'total_credit' => $lines->sum('credit'),
@@ -72,6 +75,7 @@ class AccountBalanceService
 
         foreach ($accounts as $account) {
             $debits = JournalLine::where('account_id', $account->id)
+                ->where('company_id', $account->company_id)
                 ->whereHas('journal', function ($q) use ($startDate, $endDate) {
                     $q->where('status', 'posted')
                         ->whereBetween('date', [$startDate, $endDate]);
@@ -79,6 +83,7 @@ class AccountBalanceService
                 ->sum('debit');
 
             $credits = JournalLine::where('account_id', $account->id)
+                ->where('company_id', $account->company_id)
                 ->whereHas('journal', function ($q) use ($startDate, $endDate) {
                     $q->where('status', 'posted')
                         ->whereBetween('date', [$startDate, $endDate]);
@@ -161,6 +166,7 @@ class AccountBalanceService
             }
 
             $debits = JournalLine::where('account_id', $account->id)
+                ->where('company_id', $account->company_id)
                 ->whereHas('journal', function ($q) use ($startDate, $endDate) {
                     $q->where('status', 'posted')
                         ->whereBetween('date', [$startDate, $endDate]);
@@ -168,6 +174,7 @@ class AccountBalanceService
                 ->sum('debit');
 
             $credits = JournalLine::where('account_id', $account->id)
+                ->where('company_id', $account->company_id)
                 ->whereHas('journal', function ($q) use ($startDate, $endDate) {
                     $q->where('status', 'posted')
                         ->whereBetween('date', [$startDate, $endDate]);
@@ -200,6 +207,7 @@ class AccountBalanceService
     protected function getAccountBalance($account, string $endDate): float
     {
         $debits = JournalLine::where('account_id', $account->id)
+            ->where('company_id', $account->company_id)
             ->whereHas('journal', function ($q) use ($endDate) {
                 $q->where('status', 'posted')
                     ->where('date', '<=', $endDate);
@@ -207,6 +215,7 @@ class AccountBalanceService
             ->sum('debit');
 
         $credits = JournalLine::where('account_id', $account->id)
+            ->where('company_id', $account->company_id)
             ->whereHas('journal', function ($q) use ($endDate) {
                 $q->where('status', 'posted')
                     ->where('date', '<=', $endDate);

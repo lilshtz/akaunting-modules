@@ -18,10 +18,15 @@ class Journal extends Model
         'description',
         'reference',
         'status',
+        'is_recurring',
+        'recurring_frequency',
+        'next_run_at',
     ];
 
     protected $casts = [
         'date' => 'datetime',
+        'is_recurring' => 'boolean',
+        'next_run_at' => 'datetime',
     ];
 
     public function lines()
