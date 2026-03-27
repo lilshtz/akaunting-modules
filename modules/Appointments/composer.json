@@ -1,0 +1,11 @@
+{
+    "name": "akaunting/appointments",
+    "description": "Appointments, booking forms, and leave management module for Akaunting",
+    "type": "akaunting-module",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Appointments\\": ""
+        }
+    }
+}

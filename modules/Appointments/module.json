@@ -1,0 +1,20 @@
+{
+    "alias": "appointments",
+    "icon": "event",
+    "version": "1.0.0",
+    "active": 1,
+    "providers": [
+        "Modules\\Appointments\\Providers\\Event",
+        "Modules\\Appointments\\Providers\\Main"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [
+        "employees"
+    ],
+    "reports": [],
+    "widgets": [],
+    "settings": [],
+    "extra-modules": {},
+    "routes": {}
+}
