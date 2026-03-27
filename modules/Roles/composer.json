@@ -1,0 +1,10 @@
+{
+    "name": "akaunting/roles",
+    "description": "Granular roles and permissions module for Akaunting",
+    "type": "akaunting-module",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Roles\\": ""
+        }
+    }
+}
