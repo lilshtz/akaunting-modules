@@ -1,0 +1,20 @@
+{
+    "alias": "auto-schedule-reports",
+    "icon": "schedule_send",
+    "version": "1.0.0",
+    "active": 1,
+    "providers": [
+        "Modules\\AutoScheduleReports\\Providers\\Event",
+        "Modules\\AutoScheduleReports\\Providers\\Main"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [
+        "double-entry"
+    ],
+    "reports": [],
+    "widgets": [],
+    "settings": [],
+    "extra-modules": {},
+    "routes": {}
+}
