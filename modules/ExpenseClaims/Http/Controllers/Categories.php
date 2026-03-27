@@ -10,7 +10,7 @@ use Modules\ExpenseClaims\Models\ExpenseClaimCategory;
 
 class Categories extends Controller
 {
-    public function index(): Response|mixed
+    public function index(): Response
     {
         $categories = ExpenseClaimCategory::where('company_id', company_id())
             ->orderBy('name')
@@ -19,12 +19,12 @@ class Categories extends Controller
         return view('expense-claims::categories.index', compact('categories'));
     }
 
-    public function create(): Response|mixed
+    public function create(): Response
     {
         return view('expense-claims::categories.create');
     }
 
-    public function store(CategoryStore $request): Response|mixed
+    public function store(CategoryStore $request): Response
     {
         ExpenseClaimCategory::create([
             'company_id' => company_id(),
@@ -38,14 +38,14 @@ class Categories extends Controller
         return redirect()->route('expense-claims.categories.index');
     }
 
-    public function edit(int $id): Response|mixed
+    public function edit(int $id): Response
     {
         $category = ExpenseClaimCategory::where('company_id', company_id())->findOrFail($id);
 
         return view('expense-claims::categories.edit', compact('category'));
     }
 
-    public function update(int $id, CategoryUpdate $request): Response|mixed
+    public function update(int $id, CategoryUpdate $request): Response
     {
         $category = ExpenseClaimCategory::where('company_id', company_id())->findOrFail($id);
 
@@ -60,7 +60,7 @@ class Categories extends Controller
         return redirect()->route('expense-claims.categories.index');
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $category = ExpenseClaimCategory::where('company_id', company_id())->findOrFail($id);
 

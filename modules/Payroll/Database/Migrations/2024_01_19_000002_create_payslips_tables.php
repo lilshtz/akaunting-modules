@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('payslips', function (Blueprint $table) {
+        if (!Schema::hasTable('payslips')) {
+            Schema::create('payslips', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('payroll_run_id');
@@ -21,14 +22,15 @@ return new class extends Migration
             $table->timestamp('emailed_at')->nullable();
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->cascadeOnDelete();
             $table->foreign('payroll_run_id')->references('id')->on('payroll_runs')->cascadeOnDelete();
             $table->foreign('employee_id')->references('id')->on('employees')->cascadeOnDelete();
             $table->unique(['payroll_run_id', 'employee_id']);
-            $table->index(['company_id', 'employee_id']);
+            $table->index(['company_id', 'employee_id'], 'idx_9246_b394a3ea');
         });
+        }
 
-        Schema::create('payslip_items', function (Blueprint $table) {
+        if (!Schema::hasTable('payslip_items')) {
+            Schema::create('payslip_items', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('payslip_id');
             $table->unsignedBigInteger('pay_item_id')->nullable();
@@ -41,8 +43,9 @@ return new class extends Migration
 
             $table->foreign('payslip_id')->references('id')->on('payslips')->cascadeOnDelete();
             $table->foreign('pay_item_id')->references('id')->on('pay_items')->nullOnDelete();
-            $table->index(['payslip_id', 'type']);
+            $table->index(['payslip_id', 'type'], 'idx_9246_68880c87');
         });
+        }
     }
 
     public function down(): void

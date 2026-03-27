@@ -24,7 +24,7 @@ use Modules\Estimates\Notifications\EstimateStatusChanged;
 
 class Estimates extends Controller
 {
-    public function index(Request $request): Response|mixed
+    public function index(Request $request): Response
     {
         $query = Estimate::where('company_id', company_id())
             ->with(['contact', 'items', 'totals']);
@@ -74,7 +74,7 @@ class Estimates extends Controller
         return $this->response('estimates::estimates.index', compact('estimates', 'statuses', 'customers'));
     }
 
-    public function create(): Response|mixed
+    public function create(): Response
     {
         $customers = Contact::where('company_id', company_id())
             ->where('type', 'customer')
@@ -112,7 +112,7 @@ class Estimates extends Controller
         ));
     }
 
-    public function store(EstimateStore $request): Response|mixed
+    public function store(EstimateStore $request): Response
     {
         $settings = EstimateSetting::getForCompany(company_id());
 
@@ -164,7 +164,7 @@ class Estimates extends Controller
         return redirect()->route('estimates.estimates.show', $estimate->id);
     }
 
-    public function show(int $id): Response|mixed
+    public function show(int $id): Response
     {
         $estimate = Estimate::where('company_id', company_id())
             ->with(['contact', 'items.taxes', 'totals', 'estimateHistories', 'portalToken', 'convertedInvoice'])
@@ -175,7 +175,7 @@ class Estimates extends Controller
         return view('estimates::estimates.show', compact('estimate'));
     }
 
-    public function edit(int $id): Response|mixed
+    public function edit(int $id): Response
     {
         $estimate = Estimate::where('company_id', company_id())
             ->with(['contact', 'items.taxes'])
@@ -214,7 +214,7 @@ class Estimates extends Controller
         return view('estimates::estimates.edit', compact('estimate', 'customers', 'currencies', 'categories', 'taxes'));
     }
 
-    public function update(int $id, EstimateUpdate $request): Response|mixed
+    public function update(int $id, EstimateUpdate $request): Response
     {
         $estimate = Estimate::where('company_id', company_id())->findOrFail($id);
 
@@ -267,7 +267,7 @@ class Estimates extends Controller
         return redirect()->route('estimates.estimates.show', $estimate->id);
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $estimate = Estimate::where('company_id', company_id())->findOrFail($id);
 
@@ -288,7 +288,7 @@ class Estimates extends Controller
         return redirect()->route('estimates.estimates.index');
     }
 
-    public function send(int $id): Response|mixed
+    public function send(int $id): Response
     {
         $estimate = Estimate::where('company_id', company_id())
             ->with('contact')
@@ -322,7 +322,7 @@ class Estimates extends Controller
         return redirect()->route('estimates.estimates.show', $estimate->id);
     }
 
-    public function approve(int $id): Response|mixed
+    public function approve(int $id): Response
     {
         $estimate = Estimate::where('company_id', company_id())->findOrFail($id);
 
@@ -340,7 +340,7 @@ class Estimates extends Controller
         return redirect()->route('estimates.estimates.show', $estimate->id);
     }
 
-    public function refuse(Request $request, int $id): Response|mixed
+    public function refuse(Request $request, int $id): Response
     {
         $estimate = Estimate::where('company_id', company_id())->findOrFail($id);
 
@@ -361,7 +361,7 @@ class Estimates extends Controller
         return redirect()->route('estimates.estimates.show', $estimate->id);
     }
 
-    public function convert(int $id): Response|mixed
+    public function convert(int $id): Response
     {
         $estimate = Estimate::where('company_id', company_id())
             ->with(['items.taxes', 'totals'])
@@ -464,7 +464,7 @@ class Estimates extends Controller
         return redirect()->route('estimates.estimates.show', $estimate->id);
     }
 
-    public function duplicate(int $id): Response|mixed
+    public function duplicate(int $id): Response
     {
         $estimate = Estimate::where('company_id', company_id())
             ->with(['items.taxes'])
@@ -570,7 +570,7 @@ class Estimates extends Controller
             ->header('Content-Disposition', 'inline; filename="' . $filename . '"');
     }
 
-    public function settings(Request $request): Response|mixed
+    public function settings(Request $request): Response
     {
         $settings = EstimateSetting::getForCompany(company_id());
 

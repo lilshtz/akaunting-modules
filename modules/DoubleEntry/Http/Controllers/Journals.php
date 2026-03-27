@@ -13,7 +13,7 @@ use Modules\DoubleEntry\Models\Journal;
 
 class Journals extends Controller
 {
-    public function index(Request $request): Response|mixed
+    public function index(Request $request): Response
     {
         $query = Journal::where('company_id', company_id())
             ->with('lines.account')
@@ -41,7 +41,7 @@ class Journals extends Controller
         return $this->response('double-entry::journals.index', compact('journals'));
     }
 
-    public function create(): Response|mixed
+    public function create(): Response
     {
         $accounts = Account::where('company_id', company_id())
             ->enabled()
@@ -52,7 +52,7 @@ class Journals extends Controller
         return view('double-entry::journals.create', compact('accounts'));
     }
 
-    public function store(JournalStore $request): Response|mixed
+    public function store(JournalStore $request): Response
     {
         DB::transaction(function () use ($request, &$journal) {
             $journal = Journal::create([
@@ -82,7 +82,7 @@ class Journals extends Controller
         return redirect()->route('double-entry.journals.index');
     }
 
-    public function show(int $id): Response|mixed
+    public function show(int $id): Response
     {
         $journal = Journal::where('company_id', company_id())
             ->with('lines.account', 'creator')
@@ -91,7 +91,7 @@ class Journals extends Controller
         return $this->response('double-entry::journals.show', compact('journal'));
     }
 
-    public function edit(int $id): Response|mixed
+    public function edit(int $id): Response
     {
         $journal = Journal::where('company_id', company_id())
             ->with('lines')
@@ -112,7 +112,7 @@ class Journals extends Controller
         return view('double-entry::journals.edit', compact('journal', 'accounts'));
     }
 
-    public function update(int $id, JournalUpdate $request): Response|mixed
+    public function update(int $id, JournalUpdate $request): Response
     {
         $journal = Journal::where('company_id', company_id())->findOrFail($id);
 
@@ -150,7 +150,7 @@ class Journals extends Controller
         return redirect()->route('double-entry.journals.show', $journal->id);
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $journal = Journal::where('company_id', company_id())->findOrFail($id);
 
@@ -187,7 +187,7 @@ class Journals extends Controller
         return redirect()->route('double-entry.journals.index');
     }
 
-    public function duplicate(int $id): Response|mixed
+    public function duplicate(int $id): Response
     {
         $original = Journal::where('company_id', company_id())
             ->with('lines')

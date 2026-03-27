@@ -13,7 +13,7 @@ class BudgetReports extends Controller
     {
     }
 
-    public function show(int $budgetId): mixed
+    public function show(int $budgetId): \Illuminate\Http\Response
     {
         $budget = $this->findBudget($budgetId);
         $report = $this->reports->build($budget);
@@ -21,7 +21,7 @@ class BudgetReports extends Controller
         return view('budgets::reports.show', compact('budget', 'report'));
     }
 
-    public function export(Request $request, int $budgetId): mixed
+    public function export(Request $request, int $budgetId): \Illuminate\Http\Response
     {
         $budget = $this->findBudget($budgetId);
         $report = $this->reports->build($budget);

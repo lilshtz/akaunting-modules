@@ -18,7 +18,7 @@ class BalanceSheet extends Controller
         $this->balanceService = $balanceService;
     }
 
-    public function index(Request $request): Response|mixed
+    public function index(Request $request): Response
     {
         $companyId = company_id();
         $asOfDate = $request->get('as_of_date', now()->toDateString());
@@ -38,7 +38,7 @@ class BalanceSheet extends Controller
         ));
     }
 
-    public function export(Request $request): mixed
+    public function export(Request $request): \Illuminate\Http\Response
     {
         $companyId = company_id();
         $asOfDate = $request->get('as_of_date', now()->toDateString());

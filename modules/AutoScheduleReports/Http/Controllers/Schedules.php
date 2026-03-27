@@ -21,7 +21,7 @@ class Schedules extends Controller
     ) {
     }
 
-    public function index(Request $request): Response|mixed
+    public function index(Request $request): Response
     {
         $query = ReportSchedule::forCompany(company_id())
             ->withCount('runs')
@@ -42,7 +42,7 @@ class Schedules extends Controller
         return view('auto-schedule-reports::schedules.index', array_merge($this->formData(), compact('schedules')));
     }
 
-    public function create(): Response|mixed
+    public function create(): Response
     {
         $schedule = new ReportSchedule([
             'report_type' => 'pnl',
@@ -56,7 +56,7 @@ class Schedules extends Controller
         return view('auto-schedule-reports::schedules.create', array_merge($this->formData(), compact('schedule')));
     }
 
-    public function store(ScheduleStore $request): Response|mixed
+    public function store(ScheduleStore $request): Response
     {
         ReportSchedule::create([
             'company_id' => company_id(),
@@ -77,7 +77,7 @@ class Schedules extends Controller
         return redirect()->route('auto-schedule-reports.schedules.index');
     }
 
-    public function show(int $id): Response|mixed
+    public function show(int $id): Response
     {
         $schedule = $this->findSchedule($id);
         $runs = $schedule->runs()->latest('ran_at')->paginate(15);
@@ -85,14 +85,14 @@ class Schedules extends Controller
         return view('auto-schedule-reports::schedules.show', compact('schedule', 'runs'));
     }
 
-    public function edit(int $id): Response|mixed
+    public function edit(int $id): Response
     {
         $schedule = $this->findSchedule($id);
 
         return view('auto-schedule-reports::schedules.edit', array_merge($this->formData(), compact('schedule')));
     }
 
-    public function update(int $id, ScheduleUpdate $request): Response|mixed
+    public function update(int $id, ScheduleUpdate $request): Response
     {
         $schedule = $this->findSchedule($id);
 
@@ -114,7 +114,7 @@ class Schedules extends Controller
         return redirect()->route('auto-schedule-reports.schedules.show', $schedule->id);
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $schedule = $this->findSchedule($id);
         $schedule->delete();
@@ -124,7 +124,7 @@ class Schedules extends Controller
         return redirect()->route('auto-schedule-reports.schedules.index');
     }
 
-    public function toggle(int $id): Response|mixed
+    public function toggle(int $id): Response
     {
         $schedule = $this->findSchedule($id);
         $schedule->update(['enabled' => ! $schedule->enabled]);
@@ -134,7 +134,7 @@ class Schedules extends Controller
         return redirect()->route('auto-schedule-reports.schedules.index');
     }
 
-    public function runNow(int $id): Response|mixed
+    public function runNow(int $id): Response
     {
         $schedule = $this->findSchedule($id);
         $run = $this->runner->run($schedule, false);
@@ -148,7 +148,7 @@ class Schedules extends Controller
         return redirect()->route('auto-schedule-reports.schedules.show', $schedule->id);
     }
 
-    public function downloadRun(int $id): mixed
+    public function downloadRun(int $id): \Illuminate\Http\Response
     {
         $run = ReportScheduleRun::whereHas('schedule', fn ($query) => $query->where('company_id', company_id()))
             ->findOrFail($id);

@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('bank_feed_reconciliations', function (Blueprint $table) {
+        if (!Schema::hasTable('bank_feed_reconciliations')) {
+            Schema::create('bank_feed_reconciliations', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('bank_account_id');
@@ -23,11 +24,11 @@ return new class extends Migration
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             $table->index('company_id');
-            $table->index(['company_id', 'bank_account_id']);
+            $table->index(['company_id', 'bank_account_id'], 'idx_75f1_3d8f1223');
             $table->index('status');
         });
+        }
 
         Schema::table('bank_feed_transactions', function (Blueprint $table) {
             $table->string('duplicate_hash', 64)->nullable()->after('status');

@@ -12,7 +12,7 @@ use Modules\Crm\Models\CrmContact;
 
 class Companies extends Controller
 {
-    public function index(Request $request): Response|mixed
+    public function index(Request $request): Response
     {
         $query = CrmCompany::where('company_id', company_id())
             ->withCount('contacts');
@@ -33,14 +33,14 @@ class Companies extends Controller
         return $this->response('crm::companies.index', compact('companies', 'stages'));
     }
 
-    public function create(): Response|mixed
+    public function create(): Response
     {
         $stages = $this->stageOptions();
 
         return view('crm::companies.create', compact('stages'));
     }
 
-    public function store(CompanyStore $request): Response|mixed
+    public function store(CompanyStore $request): Response
     {
         $company = CrmCompany::create([
             'company_id' => company_id(),
@@ -55,7 +55,7 @@ class Companies extends Controller
         return redirect()->route('crm.companies.show', $company->id);
     }
 
-    public function show(int $id): Response|mixed
+    public function show(int $id): Response
     {
         $company = CrmCompany::where('company_id', company_id())
             ->with(['contacts.owner', 'contacts.akauntingContact'])
@@ -64,7 +64,7 @@ class Companies extends Controller
         return view('crm::companies.show', compact('company'));
     }
 
-    public function edit(int $id): Response|mixed
+    public function edit(int $id): Response
     {
         $company = CrmCompany::where('company_id', company_id())->findOrFail($id);
         $stages = $this->stageOptions();
@@ -72,7 +72,7 @@ class Companies extends Controller
         return view('crm::companies.edit', compact('company', 'stages'));
     }
 
-    public function update(int $id, CompanyUpdate $request): Response|mixed
+    public function update(int $id, CompanyUpdate $request): Response
     {
         $company = CrmCompany::where('company_id', company_id())->findOrFail($id);
 
@@ -88,7 +88,7 @@ class Companies extends Controller
         return redirect()->route('crm.companies.show', $company->id);
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $company = CrmCompany::where('company_id', company_id())->findOrFail($id);
         $name = $company->name;

@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('appointments', function (Blueprint $table) {
+        if (!Schema::hasTable('appointments')) {
+            Schema::create('appointments', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('contact_id')->nullable();
@@ -22,14 +23,13 @@ return new class extends Migration
             $table->boolean('reminder_sent')->default(false);
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->cascadeOnDelete();
-            $table->foreign('contact_id')->references('id')->on('contacts')->nullOnDelete();
-            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
-            $table->index(['company_id', 'date']);
-            $table->index(['company_id', 'status']);
+            $table->index(['company_id', 'date'], 'idx_6eb1_f2367604');
+            $table->index(['company_id', 'status'], 'idx_6eb1_1915fc9e');
         });
+        }
 
-        Schema::create('appointment_forms', function (Blueprint $table) {
+        if (!Schema::hasTable('appointment_forms')) {
+            Schema::create('appointment_forms', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->string('name');
@@ -38,11 +38,12 @@ return new class extends Migration
             $table->boolean('enabled')->default(true);
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->cascadeOnDelete();
-            $table->index(['company_id', 'enabled']);
+            $table->index(['company_id', 'enabled'], 'idx_6eb1_8272d36f');
         });
+        }
 
-        Schema::create('leave_requests', function (Blueprint $table) {
+        if (!Schema::hasTable('leave_requests')) {
+            Schema::create('leave_requests', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('employee_id');
@@ -58,12 +59,11 @@ return new class extends Migration
             $table->text('refusal_reason')->nullable();
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->cascadeOnDelete();
             $table->foreign('employee_id')->references('id')->on('employees')->cascadeOnDelete();
-            $table->foreign('approver_id')->references('id')->on('users')->nullOnDelete();
-            $table->index(['company_id', 'status']);
-            $table->index(['company_id', 'employee_id', 'type']);
+            $table->index(['company_id', 'status'], 'idx_6eb1_1915fc9e');
+            $table->index(['company_id', 'employee_id', 'type'], 'idx_6eb1_fc487f84');
         });
+        }
     }
 
     public function down(): void

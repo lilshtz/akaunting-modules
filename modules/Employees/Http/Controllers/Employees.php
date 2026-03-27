@@ -14,7 +14,7 @@ use Modules\Employees\Models\EmployeeDocument;
 
 class Employees extends Controller
 {
-    public function index(Request $request): Response|mixed
+    public function index(Request $request): Response
     {
         $query = Employee::where('company_id', company_id())
             ->with(['contact', 'department']);
@@ -65,7 +65,7 @@ class Employees extends Controller
         return $this->response('employees::employees.index', compact('employees', 'departments', 'statuses', 'types'));
     }
 
-    public function create(): Response|mixed
+    public function create(): Response
     {
         $departments = Department::where('company_id', company_id())
             ->orderBy('name')
@@ -103,7 +103,7 @@ class Employees extends Controller
         ));
     }
 
-    public function store(EmployeeStore $request): Response|mixed
+    public function store(EmployeeStore $request): Response
     {
         // Create new contact if no existing contact selected
         $contactId = $request->get('contact_id');
@@ -150,7 +150,7 @@ class Employees extends Controller
         return redirect()->route('employees.employees.show', $employee->id);
     }
 
-    public function show(int $id): Response|mixed
+    public function show(int $id): Response
     {
         $employee = Employee::where('company_id', company_id())
             ->with(['contact', 'department', 'documents', 'user'])
@@ -161,7 +161,7 @@ class Employees extends Controller
         return view('employees::employees.show', compact('employee', 'documentTypes'));
     }
 
-    public function edit(int $id): Response|mixed
+    public function edit(int $id): Response
     {
         $employee = Employee::where('company_id', company_id())
             ->with('contact')
@@ -208,7 +208,7 @@ class Employees extends Controller
         ));
     }
 
-    public function update(int $id, EmployeeUpdate $request): Response|mixed
+    public function update(int $id, EmployeeUpdate $request): Response
     {
         $employee = Employee::where('company_id', company_id())->findOrFail($id);
 
@@ -246,7 +246,7 @@ class Employees extends Controller
         return redirect()->route('employees.employees.show', $employee->id);
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $employee = Employee::where('company_id', company_id())->findOrFail($id);
 

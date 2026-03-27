@@ -17,7 +17,7 @@ use Modules\Projects\Models\ProjectTimesheet;
 
 class Tasks extends Controller
 {
-    public function store(TaskStore $request, int $projectId): Response|mixed
+    public function store(TaskStore $request, int $projectId): Response
     {
         $project = $this->findProject($projectId);
 
@@ -48,7 +48,7 @@ class Tasks extends Controller
         return redirect()->route('projects.projects.show', ['project' => $project->id, 'tab' => 'tasks']);
     }
 
-    public function edit(int $id): Response|mixed
+    public function edit(int $id): Response
     {
         $task = ProjectTask::with(['project', 'milestone', 'assignee'])->findOrFail($id);
         $project = $this->findProject($task->project_id);
@@ -68,7 +68,7 @@ class Tasks extends Controller
         ));
     }
 
-    public function update(TaskUpdate $request, int $id): Response|mixed
+    public function update(TaskUpdate $request, int $id): Response
     {
         $task = ProjectTask::with('project')->findOrFail($id);
         $project = $this->findProject($task->project_id);
@@ -96,7 +96,7 @@ class Tasks extends Controller
         return redirect()->route('projects.projects.show', ['project' => $project->id, 'tab' => 'tasks']);
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $task = ProjectTask::with('project')->findOrFail($id);
         $project = $this->findProject($task->project_id);
@@ -113,7 +113,7 @@ class Tasks extends Controller
         return redirect()->route('projects.projects.show', ['project' => $project->id, 'tab' => 'tasks']);
     }
 
-    public function transition(Request $request, int $projectId, int $id): Response|mixed
+    public function transition(Request $request, int $projectId, int $id): Response
     {
         $project = $this->findProject($projectId);
         $task = $project->tasks()->findOrFail($id);

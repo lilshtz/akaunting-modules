@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('role_module_permissions', function (Blueprint $table) {
+        if (!Schema::hasTable('role_module_permissions')) {
+            Schema::create('role_module_permissions', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('role_id');
@@ -19,25 +20,23 @@ return new class extends Migration
             $table->boolean('can_delete')->default(false);
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-            $table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');
             $table->unique(['company_id', 'role_id', 'module_alias'], 'role_module_permissions_unique');
-            $table->index(['company_id', 'module_alias']);
+            $table->index(['company_id', 'module_alias'], 'idx_448d_9caaa96c');
         });
+        }
 
-        Schema::create('user_company_roles', function (Blueprint $table) {
+        if (!Schema::hasTable('user_company_roles')) {
+            Schema::create('user_company_roles', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('user_id');
             $table->unsignedBigInteger('role_id');
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');
             $table->unique(['company_id', 'user_id'], 'user_company_roles_unique');
-            $table->index(['company_id', 'role_id']);
+            $table->index(['company_id', 'role_id'], 'idx_448d_05f048e2');
         });
+        }
     }
 
     public function down(): void

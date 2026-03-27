@@ -19,7 +19,7 @@ class ProfitLoss extends Controller
         $this->balanceService = $balanceService;
     }
 
-    public function index(Request $request): Response|mixed
+    public function index(Request $request): Response
     {
         $companyId = company_id();
         $dateFrom = $request->get('date_from', now()->startOfYear()->toDateString());
@@ -48,7 +48,7 @@ class ProfitLoss extends Controller
         ));
     }
 
-    public function export(Request $request): mixed
+    public function export(Request $request): \Illuminate\Http\Response
     {
         $companyId = company_id();
         $dateFrom = $request->get('date_from', now()->startOfYear()->toDateString());

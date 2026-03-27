@@ -11,7 +11,7 @@ use Modules\Employees\Models\EmployeeDocument;
 
 class EmployeeDocuments extends Controller
 {
-    public function store(int $employeeId, Request $request): Response|mixed
+    public function store(int $employeeId, Request $request): Response
     {
         $employee = Employee::where('company_id', company_id())->findOrFail($employeeId);
 
@@ -40,7 +40,7 @@ class EmployeeDocuments extends Controller
         return redirect()->route('employees.employees.show', $employee->id);
     }
 
-    public function download(int $employeeId, int $documentId): Response|mixed
+    public function download(int $employeeId, int $documentId): Response
     {
         $employee = Employee::where('company_id', company_id())->findOrFail($employeeId);
 
@@ -49,7 +49,7 @@ class EmployeeDocuments extends Controller
         return Storage::disk('public')->download($document->file_path, $document->name);
     }
 
-    public function destroy(int $employeeId, int $documentId): Response|mixed
+    public function destroy(int $employeeId, int $documentId): Response
     {
         $employee = Employee::where('company_id', company_id())->findOrFail($employeeId);
 

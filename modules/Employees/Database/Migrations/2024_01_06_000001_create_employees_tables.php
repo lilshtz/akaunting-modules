@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('departments', function (Blueprint $table) {
+        if (!Schema::hasTable('departments')) {
+            Schema::create('departments', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->string('name');
@@ -16,12 +17,13 @@ return new class extends Migration
             $table->unsignedBigInteger('manager_id')->nullable();
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
 
             $table->index('company_id');
         });
+        }
 
-        Schema::create('employees', function (Blueprint $table) {
+        if (!Schema::hasTable('employees')) {
+            Schema::create('employees', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('contact_id');
@@ -43,23 +45,22 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-            $table->foreign('contact_id')->references('id')->on('contacts')->onDelete('cascade');
             $table->foreign('department_id')->references('id')->on('departments')->onDelete('set null');
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
 
             $table->index('company_id');
             $table->index('department_id');
             $table->index('status');
-            $table->index(['company_id', 'status']);
+            $table->index(['company_id', 'status'], 'idx_5fcc_1915fc9e');
         });
+        }
 
         // Add manager FK after employees table exists
         Schema::table('departments', function (Blueprint $table) {
             $table->foreign('manager_id')->references('id')->on('employees')->onDelete('set null');
         });
 
-        Schema::create('employee_documents', function (Blueprint $table) {
+        if (!Schema::hasTable('employee_documents')) {
+            Schema::create('employee_documents', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('employee_id');
             $table->string('name');
@@ -72,6 +73,7 @@ return new class extends Migration
 
             $table->index('employee_id');
         });
+        }
     }
 
     public function down(): void

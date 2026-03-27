@@ -14,7 +14,7 @@ use Modules\Projects\Models\ProjectTimesheet;
 
 class Timesheets extends Controller
 {
-    public function store(TimesheetStore $request, int $projectId): Response|mixed
+    public function store(TimesheetStore $request, int $projectId): Response
     {
         $project = $this->findProject($projectId);
         $task = $project->tasks()->findOrFail($request->integer('task_id'));
@@ -43,7 +43,7 @@ class Timesheets extends Controller
         return redirect()->route('projects.projects.show', ['project' => $project->id, 'tab' => 'timesheets']);
     }
 
-    public function start(Request $request, int $projectId, int $taskId): Response|mixed
+    public function start(Request $request, int $projectId, int $taskId): Response
     {
         $project = $this->findProject($projectId);
         $task = $project->tasks()->findOrFail($taskId);
@@ -75,7 +75,7 @@ class Timesheets extends Controller
         return redirect()->back();
     }
 
-    public function stop(Request $request, int $projectId, int $taskId): Response|mixed
+    public function stop(Request $request, int $projectId, int $taskId): Response
     {
         $project = $this->findProject($projectId);
         $task = $project->tasks()->findOrFail($taskId);

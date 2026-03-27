@@ -21,7 +21,7 @@ use Modules\Projects\Services\ProjectReportService;
 
 class Projects extends Controller
 {
-    public function index(Request $request): Response|mixed
+    public function index(Request $request): Response
     {
         $query = Project::where('company_id', company_id())
             ->with(['contact', 'tasks', 'milestones']);
@@ -54,12 +54,12 @@ class Projects extends Controller
         return $this->response('projects::projects.index', compact('projects', 'contacts', 'statuses'));
     }
 
-    public function create(): Response|mixed
+    public function create(): Response
     {
         return view('projects::projects.create', $this->formData());
     }
 
-    public function store(ProjectStore $request): Response|mixed
+    public function store(ProjectStore $request): Response
     {
         $project = Project::create([
             'company_id' => company_id(),
@@ -85,7 +85,7 @@ class Projects extends Controller
         return redirect()->route('projects.projects.show', $project->id);
     }
 
-    public function show(Request $request, int $id, ProjectReportService $reportService): Response|mixed
+    public function show(Request $request, int $id, ProjectReportService $reportService): Response
     {
         $project = $this->findProject($id, [
             'contact',
@@ -153,7 +153,7 @@ class Projects extends Controller
         ));
     }
 
-    public function edit(int $id): Response|mixed
+    public function edit(int $id): Response
     {
         $project = $this->findProject($id, ['members']);
 
@@ -163,7 +163,7 @@ class Projects extends Controller
         ));
     }
 
-    public function update(int $id, ProjectUpdate $request): Response|mixed
+    public function update(int $id, ProjectUpdate $request): Response
     {
         $project = $this->findProject($id);
 
@@ -190,7 +190,7 @@ class Projects extends Controller
         return redirect()->route('projects.projects.show', $project->id);
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $project = $this->findProject($id);
 
@@ -201,7 +201,7 @@ class Projects extends Controller
         return redirect()->route('projects.projects.index');
     }
 
-    public function createTransaction(int $projectId): Response|mixed
+    public function createTransaction(int $projectId): Response
     {
         $project = $this->findProject($projectId);
 
@@ -212,7 +212,7 @@ class Projects extends Controller
         ));
     }
 
-    public function storeTransaction(int $projectId, TransactionStore $request): Response|mixed
+    public function storeTransaction(int $projectId, TransactionStore $request): Response
     {
         $project = $this->findProject($projectId);
 
@@ -236,7 +236,7 @@ class Projects extends Controller
         return redirect()->route('projects.projects.show', ['project' => $project->id, 'tab' => 'transactions']);
     }
 
-    public function destroyTransaction(int $projectId, int $transactionId): Response|mixed
+    public function destroyTransaction(int $projectId, int $transactionId): Response
     {
         $project = $this->findProject($projectId);
         $transaction = $project->transactions()->findOrFail($transactionId);
@@ -248,7 +248,7 @@ class Projects extends Controller
         return redirect()->route('projects.projects.show', ['project' => $project->id, 'tab' => 'transactions']);
     }
 
-    public function updateMembers(Request $request, int $projectId): Response|mixed
+    public function updateMembers(Request $request, int $projectId): Response
     {
         $project = $this->findProject($projectId);
 

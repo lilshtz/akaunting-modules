@@ -11,7 +11,7 @@ use Modules\Crm\Models\CrmPipelineStage;
 
 class PipelineStages extends Controller
 {
-    public function index(): Response|mixed
+    public function index(): Response
     {
         CrmPipelineStage::ensureDefaults(company_id());
 
@@ -23,7 +23,7 @@ class PipelineStages extends Controller
         return view('crm::pipeline-stages.index', compact('stages'));
     }
 
-    public function store(PipelineStageStore $request): Response|mixed
+    public function store(PipelineStageStore $request): Response
     {
         CrmPipelineStage::ensureDefaults(company_id());
         $isWon = $request->boolean('is_won');
@@ -45,7 +45,7 @@ class PipelineStages extends Controller
         return redirect()->route('crm.pipeline-stages.index');
     }
 
-    public function update(int $id, PipelineStageUpdate $request): Response|mixed
+    public function update(int $id, PipelineStageUpdate $request): Response
     {
         $stage = $this->findStage($id);
         $isWon = $request->boolean('is_won');
@@ -65,7 +65,7 @@ class PipelineStages extends Controller
         return redirect()->route('crm.pipeline-stages.index');
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $stage = $this->findStage($id);
 
@@ -84,7 +84,7 @@ class PipelineStages extends Controller
         return redirect()->route('crm.pipeline-stages.index');
     }
 
-    public function reorder(PipelineStageReorder $request): Response|mixed
+    public function reorder(PipelineStageReorder $request): Response
     {
         $orderedIds = CrmPipelineStage::forCompany(company_id())
             ->whereIn('id', $request->get('stages', []))

@@ -17,14 +17,14 @@ class Payslips extends Controller
     {
     }
 
-    public function show(int $id): Response|mixed
+    public function show(int $id): Response
     {
         $payslip = $this->payslipQuery()->findOrFail($id);
 
         return view('payroll::payslips.show', compact('payslip'));
     }
 
-    public function download(int $id): Response|mixed
+    public function download(int $id): Response
     {
         $payslip = $this->payslipQuery()->findOrFail($id);
 
@@ -44,7 +44,7 @@ class Payslips extends Controller
         return response($this->service->renderHtml($payslip), 200, ['Content-Type' => 'text/html']);
     }
 
-    public function email(int $id): Response|mixed
+    public function email(int $id): Response
     {
         $payslip = $this->payslipQuery()->findOrFail($id);
 
@@ -61,7 +61,7 @@ class Payslips extends Controller
         return redirect()->route('payroll.payslips.show', $payslip->id);
     }
 
-    public function bulkEmail(int $runId): Response|mixed
+    public function bulkEmail(int $runId): Response
     {
         $run = PayrollRun::where('company_id', company_id())
             ->with(['payslips.employee.contact', 'payslips.employee.user'])
@@ -85,7 +85,7 @@ class Payslips extends Controller
         return redirect()->route('payroll.payroll-runs.show', $run->id);
     }
 
-    public function history(int $employeeId): Response|mixed
+    public function history(int $employeeId): Response
     {
         $employee = Employee::where('company_id', company_id())
             ->with(['contact', 'department'])

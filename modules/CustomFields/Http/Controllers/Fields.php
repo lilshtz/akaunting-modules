@@ -11,7 +11,7 @@ use Modules\CustomFields\Models\FieldDefinition;
 
 class Fields extends Controller
 {
-    public function index(): Response|mixed
+    public function index(): Response
     {
         $definitions = FieldDefinition::where('company_id', company_id())
             ->orderBy('entity_type')
@@ -25,7 +25,7 @@ class Fields extends Controller
         return $this->response('custom-fields::fields.index', compact('groupedFields', 'entityTypes'));
     }
 
-    public function create(): Response|mixed
+    public function create(): Response
     {
         $entityTypes = FieldDefinition::entityTypes();
         $fieldTypes = FieldDefinition::fieldTypes();
@@ -33,7 +33,7 @@ class Fields extends Controller
         return view('custom-fields::fields.create', compact('entityTypes', 'fieldTypes'));
     }
 
-    public function store(FieldStore $request): Response|mixed
+    public function store(FieldStore $request): Response
     {
         $optionsJson = $this->parseOptionsText($request->get('options_text'));
 
@@ -58,12 +58,12 @@ class Fields extends Controller
         return redirect()->route('custom-fields.fields.index');
     }
 
-    public function show(int $id): Response|mixed
+    public function show(int $id): Response
     {
         return redirect()->route('custom-fields.fields.edit', $id);
     }
 
-    public function edit(int $id): Response|mixed
+    public function edit(int $id): Response
     {
         $field = FieldDefinition::where('company_id', company_id())->findOrFail($id);
 
@@ -73,7 +73,7 @@ class Fields extends Controller
         return view('custom-fields::fields.edit', compact('field', 'entityTypes', 'fieldTypes'));
     }
 
-    public function update(int $id, FieldUpdate $request): Response|mixed
+    public function update(int $id, FieldUpdate $request): Response
     {
         $field = FieldDefinition::where('company_id', company_id())->findOrFail($id);
 
@@ -110,7 +110,7 @@ class Fields extends Controller
         return !empty($lines) ? array_values($lines) : null;
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $field = FieldDefinition::where('company_id', company_id())->findOrFail($id);
 

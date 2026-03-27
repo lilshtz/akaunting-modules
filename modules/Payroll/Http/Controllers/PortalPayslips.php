@@ -8,7 +8,7 @@ use Modules\Payroll\Models\Payslip;
 
 class PortalPayslips extends Controller
 {
-    public function index(): Response|mixed
+    public function index(): Response
     {
         $employee = $this->employee();
 
@@ -21,14 +21,14 @@ class PortalPayslips extends Controller
         return view('payroll::portal.payslips.index', compact('employee', 'payslips'));
     }
 
-    public function show(int $id): Response|mixed
+    public function show(int $id): Response
     {
         $payslip = $this->query()->findOrFail($id);
 
         return view('payroll::portal.payslips.show', compact('payslip'));
     }
 
-    public function download(int $id): Response|mixed
+    public function download(int $id): Response
     {
         $controller = app(Payslips::class);
 

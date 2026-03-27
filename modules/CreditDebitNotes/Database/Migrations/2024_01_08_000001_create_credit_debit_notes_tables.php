@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('credit_debit_note_settings', function (Blueprint $table) {
+        if (!Schema::hasTable('credit_debit_note_settings')) {
+            Schema::create('credit_debit_note_settings', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id')->unique();
             $table->string('cn_prefix', 20)->default('CN-');
@@ -17,10 +18,11 @@ return new class extends Migration
             $table->integer('dn_next_number')->default(1);
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
         });
+        }
 
-        Schema::create('credit_debit_note_histories', function (Blueprint $table) {
+        if (!Schema::hasTable('credit_debit_note_histories')) {
+            Schema::create('credit_debit_note_histories', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('document_id');
@@ -29,12 +31,12 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-            $table->foreign('document_id')->references('id')->on('documents')->onDelete('cascade');
-            $table->index(['document_id', 'status']);
+            $table->index(['document_id', 'status'], 'idx_19c1_7b73ea75');
         });
+        }
 
-        Schema::create('credit_debit_note_portal_tokens', function (Blueprint $table) {
+        if (!Schema::hasTable('credit_debit_note_portal_tokens')) {
+            Schema::create('credit_debit_note_portal_tokens', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('document_id');
@@ -43,12 +45,12 @@ return new class extends Migration
             $table->timestamp('expires_at')->nullable();
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-            $table->foreign('document_id')->references('id')->on('documents')->onDelete('cascade');
             $table->index('token');
         });
+        }
 
-        Schema::create('credit_note_applications', function (Blueprint $table) {
+        if (!Schema::hasTable('credit_note_applications')) {
+            Schema::create('credit_note_applications', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('credit_note_id');
@@ -57,11 +59,9 @@ return new class extends Migration
             $table->date('date');
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-            $table->foreign('credit_note_id')->references('id')->on('documents')->onDelete('cascade');
-            $table->foreign('invoice_id')->references('id')->on('documents')->onDelete('cascade');
-            $table->index(['credit_note_id', 'invoice_id']);
+            $table->index(['credit_note_id', 'invoice_id'], 'idx_19c1_0738992e');
         });
+        }
     }
 
     public function down(): void

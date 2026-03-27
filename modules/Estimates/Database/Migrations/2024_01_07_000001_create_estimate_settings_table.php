@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('estimate_settings', function (Blueprint $table) {
+        if (!Schema::hasTable('estimate_settings')) {
+            Schema::create('estimate_settings', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id')->unique();
             $table->string('prefix', 20)->default('EST-');
@@ -18,10 +19,11 @@ return new class extends Migration
             $table->boolean('approval_required')->default(true);
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
         });
+        }
 
-        Schema::create('estimate_histories', function (Blueprint $table) {
+        if (!Schema::hasTable('estimate_histories')) {
+            Schema::create('estimate_histories', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('document_id');
@@ -30,12 +32,12 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-            $table->foreign('document_id')->references('id')->on('documents')->onDelete('cascade');
-            $table->index(['document_id', 'status']);
+            $table->index(['document_id', 'status'], 'idx_9246_7b73ea75');
         });
+        }
 
-        Schema::create('estimate_portal_tokens', function (Blueprint $table) {
+        if (!Schema::hasTable('estimate_portal_tokens')) {
+            Schema::create('estimate_portal_tokens', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('document_id');
@@ -44,10 +46,9 @@ return new class extends Migration
             $table->timestamp('expires_at')->nullable();
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-            $table->foreign('document_id')->references('id')->on('documents')->onDelete('cascade');
             $table->index('token');
         });
+        }
     }
 
     public function down(): void

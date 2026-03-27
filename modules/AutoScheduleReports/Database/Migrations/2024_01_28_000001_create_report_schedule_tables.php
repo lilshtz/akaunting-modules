@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('report_schedules', function (Blueprint $table) {
+        if (!Schema::hasTable('report_schedules')) {
+            Schema::create('report_schedules', function (Blueprint $table) {
             $table->id();
             $table->unsignedInteger('company_id');
             $table->string('report_type', 32);
@@ -23,10 +24,12 @@ return new class extends Migration
             $table->boolean('enabled')->default(true);
             $table->timestamps();
 
-            $table->index(['company_id', 'enabled', 'next_run'], 'report_schedules_company_enabled_next_run_idx');
+            $table->index(['company_id', 'enabled', 'next_run'], 'idx_5fd4_7e757e64');
         });
+        }
 
-        Schema::create('report_schedule_runs', function (Blueprint $table) {
+        if (!Schema::hasTable('report_schedule_runs')) {
+            Schema::create('report_schedule_runs', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('schedule_id');
             $table->dateTime('ran_at');
@@ -37,8 +40,9 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('schedule_id')->references('id')->on('report_schedules')->onDelete('cascade');
-            $table->index(['schedule_id', 'ran_at'], 'report_schedule_runs_schedule_ran_at_idx');
+            $table->index(['schedule_id', 'ran_at'], 'idx_5fd4_d0fffd8b');
         });
+        }
     }
 
     public function down(): void

@@ -24,7 +24,7 @@ class Orders extends Controller
     ) {
     }
 
-    public function index(Request $request): Response|mixed
+    public function index(Request $request): Response
     {
         $products = Item::query()
             ->where('company_id', company_id())
@@ -64,7 +64,7 @@ class Orders extends Controller
         return view('pos::orders.index', compact('products', 'contacts', 'recentOrders', 'setting'));
     }
 
-    public function store(OrderStore $request): Response|mixed
+    public function store(OrderStore $request): Response
     {
         $order = $this->orders->create($request->validated());
 
@@ -73,7 +73,7 @@ class Orders extends Controller
         return redirect()->route('pos.orders.show', $order->id);
     }
 
-    public function history(Request $request): Response|mixed
+    public function history(Request $request): Response
     {
         $query = PosOrder::ownedByCompany()->with(['contact', 'items']);
 
@@ -104,7 +104,7 @@ class Orders extends Controller
         return view('pos::orders.history', compact('orders', 'statuses'));
     }
 
-    public function show(int $id): Response|mixed
+    public function show(int $id): Response
     {
         $order = PosOrder::ownedByCompany()
             ->with(['items', 'contact'])
@@ -115,7 +115,7 @@ class Orders extends Controller
         return view('pos::orders.show', compact('order', 'setting', 'receipt'));
     }
 
-    public function refund(int $id, OrderRefund $request): Response|mixed
+    public function refund(int $id, OrderRefund $request): Response
     {
         $order = PosOrder::ownedByCompany()
             ->with('items')
@@ -127,7 +127,7 @@ class Orders extends Controller
         return redirect()->route('pos.orders.show', $refund->id);
     }
 
-    public function receipt(int $id): Response|mixed
+    public function receipt(int $id): Response
     {
         $order = PosOrder::ownedByCompany()
             ->with(['items', 'contact'])

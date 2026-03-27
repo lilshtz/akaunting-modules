@@ -25,7 +25,7 @@ use Modules\DoubleEntry\Models\Journal;
 
 class CreditNotes extends Controller
 {
-    public function index(Request $request): Response|mixed
+    public function index(Request $request): Response
     {
         $query = CreditNote::where('company_id', company_id())
             ->with(['contact', 'items', 'totals']);
@@ -61,7 +61,7 @@ class CreditNotes extends Controller
         return $this->response('credit-debit-notes::credit-notes.index', compact('creditNotes', 'statuses', 'customers'));
     }
 
-    public function create(): Response|mixed
+    public function create(): Response
     {
         $invoices = Document::where('company_id', company_id())
             ->where('type', Document::INVOICE_TYPE)
@@ -93,7 +93,7 @@ class CreditNotes extends Controller
         ));
     }
 
-    public function store(CreditNoteStore $request): Response|mixed
+    public function store(CreditNoteStore $request): Response
     {
         $settings = NoteSetting::getForCompany(company_id());
         $linkedInvoice = Document::findOrFail($request->get('parent_id'));
@@ -145,7 +145,7 @@ class CreditNotes extends Controller
         return redirect()->route('credit-debit-notes.credit-notes.show', $creditNote->id);
     }
 
-    public function show(int $id): Response|mixed
+    public function show(int $id): Response
     {
         $creditNote = CreditNote::where('company_id', company_id())
             ->with(['contact', 'items.taxes', 'totals', 'histories', 'portalToken', 'linkedInvoice', 'applications.invoice'])
@@ -164,7 +164,7 @@ class CreditNotes extends Controller
         return view('credit-debit-notes::credit-notes.show', compact('creditNote', 'openInvoices'));
     }
 
-    public function edit(int $id): Response|mixed
+    public function edit(int $id): Response
     {
         $creditNote = CreditNote::where('company_id', company_id())
             ->with(['contact', 'items.taxes'])
@@ -199,7 +199,7 @@ class CreditNotes extends Controller
         return view('credit-debit-notes::credit-notes.edit', compact('creditNote', 'invoices', 'currencies', 'taxes'));
     }
 
-    public function update(int $id, CreditNoteUpdate $request): Response|mixed
+    public function update(int $id, CreditNoteUpdate $request): Response
     {
         $creditNote = CreditNote::where('company_id', company_id())->findOrFail($id);
 
@@ -252,7 +252,7 @@ class CreditNotes extends Controller
         return redirect()->route('credit-debit-notes.credit-notes.show', $creditNote->id);
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $creditNote = CreditNote::where('company_id', company_id())->findOrFail($id);
 
@@ -275,7 +275,7 @@ class CreditNotes extends Controller
         return redirect()->route('credit-debit-notes.credit-notes.index');
     }
 
-    public function send(int $id): Response|mixed
+    public function send(int $id): Response
     {
         $creditNote = CreditNote::where('company_id', company_id())
             ->with('contact')
@@ -309,7 +309,7 @@ class CreditNotes extends Controller
         return redirect()->route('credit-debit-notes.credit-notes.show', $creditNote->id);
     }
 
-    public function markOpen(int $id): Response|mixed
+    public function markOpen(int $id): Response
     {
         $creditNote = CreditNote::where('company_id', company_id())->findOrFail($id);
 
@@ -327,7 +327,7 @@ class CreditNotes extends Controller
         return redirect()->route('credit-debit-notes.credit-notes.show', $creditNote->id);
     }
 
-    public function cancel(int $id): Response|mixed
+    public function cancel(int $id): Response
     {
         $creditNote = CreditNote::where('company_id', company_id())->findOrFail($id);
 
@@ -345,7 +345,7 @@ class CreditNotes extends Controller
         return redirect()->route('credit-debit-notes.credit-notes.show', $creditNote->id);
     }
 
-    public function applyCredit(Request $request, int $id): Response|mixed
+    public function applyCredit(Request $request, int $id): Response
     {
         $request->validate([
             'invoice_id' => 'required|integer|exists:documents,id',
@@ -397,7 +397,7 @@ class CreditNotes extends Controller
         return redirect()->route('credit-debit-notes.credit-notes.show', $creditNote->id);
     }
 
-    public function refund(Request $request, int $id): Response|mixed
+    public function refund(Request $request, int $id): Response
     {
         $request->validate([
             'amount' => 'required|numeric|gt:0',
@@ -444,7 +444,7 @@ class CreditNotes extends Controller
         return redirect()->route('credit-debit-notes.credit-notes.show', $creditNote->id);
     }
 
-    public function convertToInvoice(int $id): Response|mixed
+    public function convertToInvoice(int $id): Response
     {
         $creditNote = CreditNote::where('company_id', company_id())
             ->with(['items.taxes', 'totals'])

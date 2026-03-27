@@ -13,7 +13,7 @@ use Modules\DoubleEntry\Models\Account;
 
 class Budgets extends Controller
 {
-    public function index(Request $request): Response|mixed
+    public function index(Request $request): Response
     {
         $query = Budget::where('company_id', company_id())
             ->withCount('lines')
@@ -42,7 +42,7 @@ class Budgets extends Controller
         return view('budgets::budgets.index', compact('budgets', 'statuses'));
     }
 
-    public function create(Request $request): Response|mixed
+    public function create(Request $request): Response
     {
         $budget = new Budget([
             'period_type' => Budget::PERIOD_ANNUAL,
@@ -66,7 +66,7 @@ class Budgets extends Controller
         return view('budgets::budgets.create', array_merge($this->formData(), compact('budget', 'lineItems')));
     }
 
-    public function store(BudgetStore $request): Response|mixed
+    public function store(BudgetStore $request): Response
     {
         $budget = Budget::create([
             'company_id' => company_id(),
@@ -85,14 +85,14 @@ class Budgets extends Controller
         return redirect()->route('budgets.budgets.show', $budget->id);
     }
 
-    public function show(int $id): Response|mixed
+    public function show(int $id): Response
     {
         $budget = $this->findBudget($id);
 
         return view('budgets::budgets.show', compact('budget'));
     }
 
-    public function edit(int $id): Response|mixed
+    public function edit(int $id): Response
     {
         $budget = $this->findBudget($id);
         $lineItems = $budget->lines->map(fn ($line) => [
@@ -103,7 +103,7 @@ class Budgets extends Controller
         return view('budgets::budgets.edit', array_merge($this->formData(), compact('budget', 'lineItems')));
     }
 
-    public function update(int $id, BudgetUpdate $request): Response|mixed
+    public function update(int $id, BudgetUpdate $request): Response
     {
         $budget = $this->findBudget($id);
 
@@ -124,7 +124,7 @@ class Budgets extends Controller
         return redirect()->route('budgets.budgets.show', $budget->id);
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $budget = $this->findBudget($id);
         $budget->delete();
@@ -134,7 +134,7 @@ class Budgets extends Controller
         return redirect()->route('budgets.budgets.index');
     }
 
-    public function copy(int $id): Response|mixed
+    public function copy(int $id): Response
     {
         $source = $this->findBudget($id);
         $start = $this->shiftDate($source->period_start, $source->period_type);

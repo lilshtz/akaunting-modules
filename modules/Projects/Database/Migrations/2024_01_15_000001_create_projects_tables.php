@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('projects', function (Blueprint $table) {
+        if (!Schema::hasTable('projects')) {
+            Schema::create('projects', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('contact_id')->nullable();
@@ -23,13 +24,13 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-            $table->foreign('contact_id')->references('id')->on('contacts')->onDelete('set null');
-            $table->index(['company_id', 'status']);
+            $table->index(['company_id', 'status'], 'idx_065f_1915fc9e');
             $table->index('contact_id');
         });
+        }
 
-        Schema::create('project_milestones', function (Blueprint $table) {
+        if (!Schema::hasTable('project_milestones')) {
+            Schema::create('project_milestones', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('project_id');
             $table->string('name');
@@ -40,10 +41,12 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('project_id')->references('id')->on('projects')->onDelete('cascade');
-            $table->index(['project_id', 'position']);
+            $table->index(['project_id', 'position'], 'idx_065f_8e268eaf');
         });
+        }
 
-        Schema::create('project_tasks', function (Blueprint $table) {
+        if (!Schema::hasTable('project_tasks')) {
+            Schema::create('project_tasks', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('milestone_id')->nullable();
             $table->unsignedBigInteger('project_id');
@@ -59,11 +62,13 @@ return new class extends Migration
             $table->foreign('milestone_id')->references('id')->on('project_milestones')->onDelete('set null');
             $table->foreign('project_id')->references('id')->on('projects')->onDelete('cascade');
             $table->foreign('assignee_id')->references('id')->on('employees')->onDelete('set null');
-            $table->index(['project_id', 'status']);
-            $table->index(['milestone_id', 'position']);
+            $table->index(['project_id', 'status'], 'idx_065f_1ba44618');
+            $table->index(['milestone_id', 'position'], 'idx_065f_41e73b79');
         });
+        }
 
-        Schema::create('project_members', function (Blueprint $table) {
+        if (!Schema::hasTable('project_members')) {
+            Schema::create('project_members', function (Blueprint $table) {
             $table->unsignedBigInteger('project_id');
             $table->unsignedBigInteger('user_id');
             $table->enum('role', ['manager', 'member'])->default('member');
@@ -71,10 +76,11 @@ return new class extends Migration
 
             $table->primary(['project_id', 'user_id']);
             $table->foreign('project_id')->references('id')->on('projects')->onDelete('cascade');
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
+        }
 
-        Schema::create('project_discussions', function (Blueprint $table) {
+        if (!Schema::hasTable('project_discussions')) {
+            Schema::create('project_discussions', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('project_id');
             $table->unsignedBigInteger('user_id');
@@ -83,12 +89,13 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('project_id')->references('id')->on('projects')->onDelete('cascade');
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('parent_id')->references('id')->on('project_discussions')->onDelete('cascade');
-            $table->index(['project_id', 'created_at']);
+            $table->index(['project_id', 'created_at'], 'idx_065f_e623414a');
         });
+        }
 
-        Schema::create('project_transactions', function (Blueprint $table) {
+        if (!Schema::hasTable('project_transactions')) {
+            Schema::create('project_transactions', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('project_id');
             $table->enum('document_type', ['invoice', 'bill']);
@@ -97,10 +104,12 @@ return new class extends Migration
 
             $table->foreign('project_id')->references('id')->on('projects')->onDelete('cascade');
             $table->unique(['project_id', 'document_type', 'document_id'], 'project_documents_unique');
-            $table->index(['document_type', 'document_id']);
+            $table->index(['document_type', 'document_id'], 'idx_065f_357d01e8');
         });
+        }
 
-        Schema::create('project_activities', function (Blueprint $table) {
+        if (!Schema::hasTable('project_activities')) {
+            Schema::create('project_activities', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('project_id');
             $table->unsignedBigInteger('user_id')->nullable();
@@ -111,9 +120,9 @@ return new class extends Migration
             $table->timestamp('created_at')->useCurrent();
 
             $table->foreign('project_id')->references('id')->on('projects')->onDelete('cascade');
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
-            $table->index(['project_id', 'created_at']);
+            $table->index(['project_id', 'created_at'], 'idx_065f_e623414a');
         });
+        }
     }
 
     public function down(): void

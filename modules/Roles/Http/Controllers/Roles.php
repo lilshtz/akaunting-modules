@@ -22,7 +22,7 @@ class Roles extends Controller
     ) {
     }
 
-    public function index(): Response|mixed
+    public function index(): Response
     {
         $companyId = company_id();
 
@@ -38,7 +38,7 @@ class Roles extends Controller
         return view('roles::roles.index', compact('roles'));
     }
 
-    public function create(Request $request): Response|mixed
+    public function create(Request $request): Response
     {
         $companyId = company_id();
         $template = $request->get('template', 'manager');
@@ -47,7 +47,7 @@ class Roles extends Controller
         return view('roles::roles.create', $this->formData($role, $companyId, $template));
     }
 
-    public function store(RoleStore $request): Response|mixed
+    public function store(RoleStore $request): Response
     {
         $companyId = company_id();
         $template = $request->get('template', 'custom');
@@ -70,7 +70,7 @@ class Roles extends Controller
         return redirect()->route('roles.roles.edit', $role->id);
     }
 
-    public function edit(int $id): Response|mixed
+    public function edit(int $id): Response
     {
         $companyId = company_id();
         $role = $this->findRole($id, $companyId);
@@ -78,7 +78,7 @@ class Roles extends Controller
         return view('roles::roles.edit', $this->formData($role, $companyId));
     }
 
-    public function update(int $id, RoleUpdate $request): Response|mixed
+    public function update(int $id, RoleUpdate $request): Response
     {
         $companyId = company_id();
         $role = $this->findRole($id, $companyId);
@@ -100,7 +100,7 @@ class Roles extends Controller
         return redirect()->route('roles.roles.edit', $role->id);
     }
 
-    public function duplicate(int $id): Response|mixed
+    public function duplicate(int $id): Response
     {
         $companyId = company_id();
         $role = $this->findRole($id, $companyId);
@@ -135,7 +135,7 @@ class Roles extends Controller
         return redirect()->route('roles.roles.edit', $copy->id);
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $companyId = company_id();
         $role = $this->findRole($id, $companyId);

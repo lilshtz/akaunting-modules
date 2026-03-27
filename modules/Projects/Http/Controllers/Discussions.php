@@ -12,7 +12,7 @@ use Modules\Projects\Models\ProjectDiscussion;
 
 class Discussions extends Controller
 {
-    public function store(DiscussionStore $request, int $projectId): Response|mixed
+    public function store(DiscussionStore $request, int $projectId): Response
     {
         $project = $this->findProject($projectId);
 
@@ -29,7 +29,7 @@ class Discussions extends Controller
         return redirect()->route('projects.projects.show', ['project' => $project->id, 'tab' => 'discussions']);
     }
 
-    public function update(DiscussionUpdate $request, int $id): Response|mixed
+    public function update(DiscussionUpdate $request, int $id): Response
     {
         $discussion = ProjectDiscussion::with('project')->findOrFail($id);
         $project = $this->findProject($discussion->project_id);
@@ -43,7 +43,7 @@ class Discussions extends Controller
         return redirect()->route('projects.projects.show', ['project' => $project->id, 'tab' => 'discussions']);
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $discussion = ProjectDiscussion::with('project')->findOrFail($id);
         $project = $this->findProject($discussion->project_id);

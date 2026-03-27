@@ -16,7 +16,7 @@ class Assignments extends Controller
     {
     }
 
-    public function index(): Response|mixed
+    public function index(): Response
     {
         $companyId = company_id();
 
@@ -40,7 +40,7 @@ class Assignments extends Controller
         return view('roles::roles.assignments', compact('users', 'assignments', 'roles'));
     }
 
-    public function store(RoleAssignmentStore $request): Response|mixed
+    public function store(RoleAssignmentStore $request): Response
     {
         $this->resolver->assignRoleToUser(
             $request->integer('user_id'),
@@ -53,7 +53,7 @@ class Assignments extends Controller
         return redirect()->route('roles.assignments.index');
     }
 
-    public function destroy(int $userId): Response|mixed
+    public function destroy(int $userId): Response
     {
         $this->resolver->removeAssignment($userId, company_id());
 

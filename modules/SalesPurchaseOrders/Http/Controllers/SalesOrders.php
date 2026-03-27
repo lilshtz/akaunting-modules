@@ -23,7 +23,7 @@ use Modules\SalesPurchaseOrders\Notifications\OrderSent;
 
 class SalesOrders extends Controller
 {
-    public function index(Request $request): Response|mixed
+    public function index(Request $request): Response
     {
         $query = SalesOrder::where('company_id', company_id())
             ->with(['contact', 'items', 'totals']);
@@ -59,7 +59,7 @@ class SalesOrders extends Controller
         return $this->response('sales-purchase-orders::sales-orders.index', compact('salesOrders', 'statuses', 'customers'));
     }
 
-    public function create(): Response|mixed
+    public function create(): Response
     {
         $customers = Contact::where('company_id', company_id())
             ->where('type', 'customer')
@@ -97,7 +97,7 @@ class SalesOrders extends Controller
         ));
     }
 
-    public function store(SalesOrderStore $request): Response|mixed
+    public function store(SalesOrderStore $request): Response
     {
         $settings = OrderSetting::getForCompany(company_id());
 
@@ -149,7 +149,7 @@ class SalesOrders extends Controller
         return redirect()->route('sales-purchase-orders.sales-orders.show', $salesOrder->id);
     }
 
-    public function show(int $id): Response|mixed
+    public function show(int $id): Response
     {
         $salesOrder = SalesOrder::where('company_id', company_id())
             ->with(['contact', 'items.taxes', 'totals', 'orderHistories', 'convertedInvoice', 'convertedPurchaseOrders'])
@@ -158,7 +158,7 @@ class SalesOrders extends Controller
         return view('sales-purchase-orders::sales-orders.show', compact('salesOrder'));
     }
 
-    public function edit(int $id): Response|mixed
+    public function edit(int $id): Response
     {
         $salesOrder = SalesOrder::where('company_id', company_id())
             ->with(['contact', 'items.taxes'])
@@ -205,7 +205,7 @@ class SalesOrders extends Controller
         ));
     }
 
-    public function update(int $id, SalesOrderUpdate $request): Response|mixed
+    public function update(int $id, SalesOrderUpdate $request): Response
     {
         $salesOrder = SalesOrder::where('company_id', company_id())->findOrFail($id);
 
@@ -258,7 +258,7 @@ class SalesOrders extends Controller
         return redirect()->route('sales-purchase-orders.sales-orders.show', $salesOrder->id);
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $salesOrder = SalesOrder::where('company_id', company_id())->findOrFail($id);
 
@@ -278,7 +278,7 @@ class SalesOrders extends Controller
         return redirect()->route('sales-purchase-orders.sales-orders.index');
     }
 
-    public function send(int $id): Response|mixed
+    public function send(int $id): Response
     {
         $salesOrder = SalesOrder::where('company_id', company_id())
             ->with('contact')
@@ -310,7 +310,7 @@ class SalesOrders extends Controller
         return redirect()->route('sales-purchase-orders.sales-orders.show', $salesOrder->id);
     }
 
-    public function confirm(int $id): Response|mixed
+    public function confirm(int $id): Response
     {
         $salesOrder = SalesOrder::where('company_id', company_id())->findOrFail($id);
 
@@ -328,7 +328,7 @@ class SalesOrders extends Controller
         return redirect()->route('sales-purchase-orders.sales-orders.show', $salesOrder->id);
     }
 
-    public function issue(int $id): Response|mixed
+    public function issue(int $id): Response
     {
         $salesOrder = SalesOrder::where('company_id', company_id())->findOrFail($id);
 
@@ -346,7 +346,7 @@ class SalesOrders extends Controller
         return redirect()->route('sales-purchase-orders.sales-orders.show', $salesOrder->id);
     }
 
-    public function cancel(int $id): Response|mixed
+    public function cancel(int $id): Response
     {
         $salesOrder = SalesOrder::where('company_id', company_id())->findOrFail($id);
 
@@ -364,7 +364,7 @@ class SalesOrders extends Controller
         return redirect()->route('sales-purchase-orders.sales-orders.show', $salesOrder->id);
     }
 
-    public function convertToInvoice(int $id): Response|mixed
+    public function convertToInvoice(int $id): Response
     {
         $salesOrder = SalesOrder::where('company_id', company_id())
             ->with(['items.taxes', 'totals'])
@@ -467,7 +467,7 @@ class SalesOrders extends Controller
         return redirect()->route('sales-purchase-orders.sales-orders.show', $salesOrder->id);
     }
 
-    public function convertToPurchaseOrder(int $id): Response|mixed
+    public function convertToPurchaseOrder(int $id): Response
     {
         $salesOrder = SalesOrder::where('company_id', company_id())
             ->with(['items.taxes', 'totals'])
@@ -568,7 +568,7 @@ class SalesOrders extends Controller
         return redirect()->route('sales-purchase-orders.sales-orders.show', $salesOrder->id);
     }
 
-    public function duplicate(int $id): Response|mixed
+    public function duplicate(int $id): Response
     {
         $salesOrder = SalesOrder::where('company_id', company_id())
             ->with(['items.taxes'])
@@ -674,7 +674,7 @@ class SalesOrders extends Controller
             ->header('Content-Disposition', 'inline; filename="' . $filename . '"');
     }
 
-    public function settings(Request $request): Response|mixed
+    public function settings(Request $request): Response
     {
         $settings = OrderSetting::getForCompany(company_id());
 
@@ -705,7 +705,7 @@ class SalesOrders extends Controller
         return view('sales-purchase-orders::sales-orders.settings', compact('settings'));
     }
 
-    public function report(): Response|mixed
+    public function report(): Response
     {
         $companyId = company_id();
 
@@ -746,12 +746,12 @@ class SalesOrders extends Controller
         ));
     }
 
-    public function import(): Response|mixed
+    public function import(): Response
     {
         return view('sales-purchase-orders::sales-orders.import');
     }
 
-    public function importProcess(Request $request): Response|mixed
+    public function importProcess(Request $request): Response
     {
         $request->validate([
             'import_file' => 'required|file|mimes:csv,txt',
@@ -866,7 +866,7 @@ class SalesOrders extends Controller
         return redirect()->route('sales-purchase-orders.sales-orders.index');
     }
 
-    public function export(): mixed
+    public function export(): \Illuminate\Http\Response
     {
         $salesOrders = SalesOrder::where('company_id', company_id())
             ->with(['contact', 'items', 'totals'])

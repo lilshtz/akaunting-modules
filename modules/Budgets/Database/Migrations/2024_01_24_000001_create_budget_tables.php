@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('budgets', function (Blueprint $table) {
+        if (!Schema::hasTable('budgets')) {
+            Schema::create('budgets', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->string('name');
@@ -19,12 +20,13 @@ return new class extends Migration
             $table->string('status', 20)->default('draft');
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-            $table->index(['company_id', 'status']);
-            $table->index(['company_id', 'period_start', 'period_end']);
+            $table->index(['company_id', 'status'], 'idx_3a66_1915fc9e');
+            $table->index(['company_id', 'period_start', 'period_end'], 'idx_3a66_df9b3537');
         });
+        }
 
-        Schema::create('budget_lines', function (Blueprint $table) {
+        if (!Schema::hasTable('budget_lines')) {
+            Schema::create('budget_lines', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('budget_id');
             $table->unsignedBigInteger('account_id');
@@ -32,10 +34,10 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('budget_id')->references('id')->on('budgets')->onDelete('cascade');
-            $table->foreign('account_id')->references('id')->on('double_entry_accounts')->onDelete('cascade');
             $table->unique(['budget_id', 'account_id']);
-            $table->index(['account_id']);
+            $table->index(['account_id'], 'idx_3a66_9e8d6204');
         });
+        }
     }
 
     public function down(): void

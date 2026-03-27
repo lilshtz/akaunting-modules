@@ -10,7 +10,7 @@ use Modules\Pos\Models\PosOrder;
 
 class Reports extends Controller
 {
-    public function daily(Request $request): Response|mixed
+    public function daily(Request $request): Response
     {
         $date = $request->get('date', now()->toDateString());
 

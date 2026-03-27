@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('double_entry_accounts', function (Blueprint $table) {
+        if (!Schema::hasTable('double_entry_accounts')) {
+            Schema::create('double_entry_accounts', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('parent_id')->nullable();
@@ -21,26 +22,26 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             $table->foreign('parent_id')->references('id')->on('double_entry_accounts')->onDelete('set null');
 
             $table->index('company_id');
             $table->index('type');
             $table->unique(['company_id', 'code']);
         });
+        }
 
-        Schema::create('double_entry_account_defaults', function (Blueprint $table) {
+        if (!Schema::hasTable('double_entry_account_defaults')) {
+            Schema::create('double_entry_account_defaults', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->string('type', 50);
             $table->unsignedBigInteger('account_id');
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-            $table->foreign('account_id')->references('id')->on('double_entry_accounts')->onDelete('cascade');
 
             $table->index('company_id');
         });
+        }
     }
 
     public function down(): void

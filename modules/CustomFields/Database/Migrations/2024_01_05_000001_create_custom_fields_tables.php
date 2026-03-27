@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('custom_field_definitions', function (Blueprint $table) {
+        if (!Schema::hasTable('custom_field_definitions')) {
+            Schema::create('custom_field_definitions', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->string('entity_type', 50);
@@ -26,14 +27,15 @@ return new class extends Migration
             $table->boolean('enabled')->default(true);
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
 
             $table->index('company_id');
             $table->index('entity_type');
-            $table->index(['company_id', 'entity_type', 'enabled']);
+            $table->index(['company_id', 'entity_type', 'enabled'], 'idx_0f82_7230be1f');
         });
+        }
 
-        Schema::create('custom_field_values', function (Blueprint $table) {
+        if (!Schema::hasTable('custom_field_values')) {
+            Schema::create('custom_field_values', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('definition_id');
             $table->string('entity_type', 50);
@@ -44,8 +46,9 @@ return new class extends Migration
             $table->foreign('definition_id')->references('id')->on('custom_field_definitions')->onDelete('cascade');
 
             $table->unique(['definition_id', 'entity_type', 'entity_id'], 'cfv_unique');
-            $table->index(['entity_type', 'entity_id']);
+            $table->index(['entity_type', 'entity_id'], 'idx_0f82_911b2311');
         });
+        }
     }
 
     public function down(): void

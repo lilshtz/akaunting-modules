@@ -11,7 +11,7 @@ use Modules\Crm\Models\CrmPipelineStage;
 
 class DealReports extends Controller
 {
-    public function index(Request $request): Response|mixed
+    public function index(Request $request): Response
     {
         CrmPipelineStage::ensureDefaults(company_id());
 

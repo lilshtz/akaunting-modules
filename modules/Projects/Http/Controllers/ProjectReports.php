@@ -9,7 +9,7 @@ use Modules\Projects\Services\ProjectReportService;
 
 class ProjectReports extends Controller
 {
-    public function show(int $projectId, ProjectReportService $reportService): Response|mixed
+    public function show(int $projectId, ProjectReportService $reportService): Response
     {
         $project = Project::where('company_id', company_id())
             ->with(['contact'])

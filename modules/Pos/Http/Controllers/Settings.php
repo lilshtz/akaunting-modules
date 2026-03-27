@@ -13,14 +13,14 @@ class Settings extends Controller
     {
     }
 
-    public function edit(): Response|mixed
+    public function edit(): Response
     {
         $setting = $this->orders->settings();
 
         return view('pos::settings.index', compact('setting'));
     }
 
-    public function update(SettingsUpdate $request): Response|mixed
+    public function update(SettingsUpdate $request): Response
     {
         $setting = $this->orders->settings();
         $setting->update([

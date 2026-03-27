@@ -22,7 +22,7 @@ class Claims extends Controller
     {
     }
 
-    public function index(Request $request): Response|mixed
+    public function index(Request $request): Response
     {
         $query = ExpenseClaim::where('company_id', company_id())
             ->with(['employee.contact', 'approver', 'items.category']);
@@ -55,12 +55,12 @@ class Claims extends Controller
         return view('expense-claims::claims.index', compact('claims', 'employees', 'statuses'));
     }
 
-    public function create(): Response|mixed
+    public function create(): Response
     {
         return view('expense-claims::claims.create', $this->formData());
     }
 
-    public function store(ClaimStore $request): Response|mixed
+    public function store(ClaimStore $request): Response
     {
         $claim = ExpenseClaim::create([
             'company_id' => company_id(),
@@ -80,7 +80,7 @@ class Claims extends Controller
         return redirect()->route('expense-claims.claims.show', $claim->id);
     }
 
-    public function show(int $id): Response|mixed
+    public function show(int $id): Response
     {
         $claim = ExpenseClaim::where('company_id', company_id())
             ->with(['employee.contact', 'approver', 'items.category', 'reimbursementDocument', 'reimbursementTransaction'])
@@ -89,7 +89,7 @@ class Claims extends Controller
         return view('expense-claims::claims.show', compact('claim'));
     }
 
-    public function edit(int $id): Response|mixed
+    public function edit(int $id): Response
     {
         $claim = ExpenseClaim::where('company_id', company_id())
             ->with('items')
@@ -104,7 +104,7 @@ class Claims extends Controller
         return view('expense-claims::claims.edit', array_merge($this->formData(), compact('claim')));
     }
 
-    public function update(int $id, ClaimUpdate $request): Response|mixed
+    public function update(int $id, ClaimUpdate $request): Response
     {
         $claim = ExpenseClaim::where('company_id', company_id())->findOrFail($id);
 
@@ -134,7 +134,7 @@ class Claims extends Controller
         return redirect()->route('expense-claims.claims.show', $claim->id);
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $claim = ExpenseClaim::where('company_id', company_id())->findOrFail($id);
 
@@ -152,7 +152,7 @@ class Claims extends Controller
         return redirect()->route('expense-claims.claims.index');
     }
 
-    public function submit(int $id): Response|mixed
+    public function submit(int $id): Response
     {
         $claim = ExpenseClaim::where('company_id', company_id())->with(['employee.user', 'approver'])->findOrFail($id);
 
@@ -178,7 +178,7 @@ class Claims extends Controller
         return redirect()->route('expense-claims.claims.show', $claim->id);
     }
 
-    public function approve(Request $request, int $id): Response|mixed
+    public function approve(Request $request, int $id): Response
     {
         $claim = ExpenseClaim::where('company_id', company_id())->with(['employee.user', 'approver'])->findOrFail($id);
 
@@ -206,7 +206,7 @@ class Claims extends Controller
         return redirect()->route('expense-claims.claims.show', $claim->id);
     }
 
-    public function refuse(Request $request, int $id): Response|mixed
+    public function refuse(Request $request, int $id): Response
     {
         $request->validate([
             'reason' => 'required|string',
@@ -237,7 +237,7 @@ class Claims extends Controller
         return redirect()->route('expense-claims.claims.show', $claim->id);
     }
 
-    public function pay(int $id): Response|mixed
+    public function pay(int $id): Response
     {
         $claim = ExpenseClaim::where('company_id', company_id())->with('employee.user')->findOrFail($id);
 
@@ -319,12 +319,12 @@ class Claims extends Controller
         ]);
     }
 
-    public function import(): Response|mixed
+    public function import(): Response
     {
         return view('expense-claims::claims.import');
     }
 
-    public function importStore(Request $request): Response|mixed
+    public function importStore(Request $request): Response
     {
         $request->validate([
             'file' => 'required|file|mimes:csv,txt|max:5120',

@@ -9,7 +9,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('expense_claim_categories', function (Blueprint $table) {
+        if (!Schema::hasTable('expense_claim_categories')) {
+            Schema::create('expense_claim_categories', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->string('name');
@@ -17,12 +18,13 @@ return new class extends Migration
             $table->boolean('enabled')->default(true);
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             $table->unique(['company_id', 'name']);
-            $table->index(['company_id', 'enabled']);
+            $table->index(['company_id', 'enabled'], 'idx_41eb_8272d36f');
         });
+        }
 
-        Schema::create('expense_claims', function (Blueprint $table) {
+        if (!Schema::hasTable('expense_claims')) {
+            Schema::create('expense_claims', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('employee_id');
@@ -42,19 +44,17 @@ return new class extends Migration
             $table->timestamp('paid_at')->nullable();
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             $table->foreign('employee_id')->references('id')->on('employees')->onDelete('cascade');
-            $table->foreign('approver_id')->references('id')->on('users')->onDelete('set null');
-            $table->foreign('reimbursement_document_id')->references('id')->on('documents')->onDelete('set null');
-            $table->foreign('reimbursement_transaction_id')->references('id')->on('transactions')->onDelete('set null');
 
-            $table->index(['company_id', 'status']);
-            $table->index(['employee_id', 'status']);
-            $table->index(['approver_id', 'status']);
+            $table->index(['company_id', 'status'], 'idx_41eb_1915fc9e');
+            $table->index(['employee_id', 'status'], 'idx_41eb_de1876ba');
+            $table->index(['approver_id', 'status'], 'idx_41eb_34d36ceb');
             $table->index('due_date');
         });
+        }
 
-        Schema::create('expense_claim_items', function (Blueprint $table) {
+        if (!Schema::hasTable('expense_claim_items')) {
+            Schema::create('expense_claim_items', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('claim_id');
             $table->unsignedBigInteger('category_id')->nullable();
@@ -67,11 +67,11 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('claim_id')->references('id')->on('expense_claims')->onDelete('cascade');
-            $table->foreign('category_id')->references('id')->on('expense_claim_categories')->onDelete('set null');
 
-            $table->index(['claim_id', 'date']);
-            $table->index(['category_id', 'date']);
+            $table->index(['claim_id', 'date'], 'idx_41eb_4ec2bf2d');
+            $table->index(['category_id', 'date'], 'idx_41eb_28289bc1');
         });
+        }
 
         $this->seedDefaultCategories();
     }
@@ -102,3 +102,4 @@ return new class extends Migration
         }
     }
 }
+;

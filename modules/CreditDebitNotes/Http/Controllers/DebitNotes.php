@@ -24,7 +24,7 @@ use Modules\DoubleEntry\Models\Journal;
 
 class DebitNotes extends Controller
 {
-    public function index(Request $request): Response|mixed
+    public function index(Request $request): Response
     {
         $query = DebitNote::where('company_id', company_id())
             ->with(['contact', 'items', 'totals']);
@@ -60,7 +60,7 @@ class DebitNotes extends Controller
         return $this->response('credit-debit-notes::debit-notes.index', compact('debitNotes', 'statuses', 'vendors'));
     }
 
-    public function create(): Response|mixed
+    public function create(): Response
     {
         $bills = Document::where('company_id', company_id())
             ->where('type', Document::BILL_TYPE)
@@ -92,7 +92,7 @@ class DebitNotes extends Controller
         ));
     }
 
-    public function store(DebitNoteStore $request): Response|mixed
+    public function store(DebitNoteStore $request): Response
     {
         $settings = NoteSetting::getForCompany(company_id());
         $linkedBill = Document::findOrFail($request->get('parent_id'));
@@ -144,7 +144,7 @@ class DebitNotes extends Controller
         return redirect()->route('credit-debit-notes.debit-notes.show', $debitNote->id);
     }
 
-    public function show(int $id): Response|mixed
+    public function show(int $id): Response
     {
         $debitNote = DebitNote::where('company_id', company_id())
             ->with(['contact', 'items.taxes', 'totals', 'histories', 'portalToken', 'linkedBill'])
@@ -153,7 +153,7 @@ class DebitNotes extends Controller
         return view('credit-debit-notes::debit-notes.show', compact('debitNote'));
     }
 
-    public function edit(int $id): Response|mixed
+    public function edit(int $id): Response
     {
         $debitNote = DebitNote::where('company_id', company_id())
             ->with(['contact', 'items.taxes'])
@@ -188,7 +188,7 @@ class DebitNotes extends Controller
         return view('credit-debit-notes::debit-notes.edit', compact('debitNote', 'bills', 'currencies', 'taxes'));
     }
 
-    public function update(int $id, DebitNoteUpdate $request): Response|mixed
+    public function update(int $id, DebitNoteUpdate $request): Response
     {
         $debitNote = DebitNote::where('company_id', company_id())->findOrFail($id);
 
@@ -241,7 +241,7 @@ class DebitNotes extends Controller
         return redirect()->route('credit-debit-notes.debit-notes.show', $debitNote->id);
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $debitNote = DebitNote::where('company_id', company_id())->findOrFail($id);
 
@@ -264,7 +264,7 @@ class DebitNotes extends Controller
         return redirect()->route('credit-debit-notes.debit-notes.index');
     }
 
-    public function send(int $id): Response|mixed
+    public function send(int $id): Response
     {
         $debitNote = DebitNote::where('company_id', company_id())
             ->with('contact')
@@ -298,7 +298,7 @@ class DebitNotes extends Controller
         return redirect()->route('credit-debit-notes.debit-notes.show', $debitNote->id);
     }
 
-    public function markOpen(int $id): Response|mixed
+    public function markOpen(int $id): Response
     {
         $debitNote = DebitNote::where('company_id', company_id())->findOrFail($id);
 
@@ -316,7 +316,7 @@ class DebitNotes extends Controller
         return redirect()->route('credit-debit-notes.debit-notes.show', $debitNote->id);
     }
 
-    public function cancel(int $id): Response|mixed
+    public function cancel(int $id): Response
     {
         $debitNote = DebitNote::where('company_id', company_id())->findOrFail($id);
 
@@ -334,7 +334,7 @@ class DebitNotes extends Controller
         return redirect()->route('credit-debit-notes.debit-notes.show', $debitNote->id);
     }
 
-    public function convertToBill(int $id): Response|mixed
+    public function convertToBill(int $id): Response
     {
         $debitNote = DebitNote::where('company_id', company_id())
             ->with(['items.taxes', 'totals'])

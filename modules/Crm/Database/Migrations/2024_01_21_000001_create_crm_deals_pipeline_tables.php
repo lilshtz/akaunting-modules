@@ -9,7 +9,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('crm_pipeline_stages', function (Blueprint $table) {
+        if (!Schema::hasTable('crm_pipeline_stages')) {
+            Schema::create('crm_pipeline_stages', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->string('name');
@@ -19,11 +20,12 @@ return new class extends Migration
             $table->boolean('is_lost')->default(false);
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-            $table->index(['company_id', 'position']);
+            $table->index(['company_id', 'position'], 'idx_8d78_74baa35a');
         });
+        }
 
-        Schema::create('crm_deals', function (Blueprint $table) {
+        if (!Schema::hasTable('crm_deals')) {
+            Schema::create('crm_deals', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('crm_contact_id');
@@ -37,19 +39,16 @@ return new class extends Migration
             $table->timestamp('closed_at')->nullable();
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-            $table->foreign('crm_contact_id')->references('id')->on('crm_contacts')->onDelete('cascade');
             $table->foreign('stage_id')->references('id')->on('crm_pipeline_stages')->onDelete('cascade');
-            $table->foreign('invoice_id')->references('id')->on('documents')->onDelete('set null');
-            $table->index(['company_id', 'status']);
-            $table->index(['company_id', 'stage_id']);
-            $table->index(['company_id', 'crm_contact_id']);
-            $table->index(['company_id', 'closed_at']);
+            $table->index(['company_id', 'status'], 'idx_8d78_1915fc9e');
+            $table->index(['company_id', 'stage_id'], 'idx_8d78_7eb57f63');
+            $table->index(['company_id', 'crm_contact_id'], 'idx_8d78_b6c292c0');
+            $table->index(['company_id', 'closed_at'], 'idx_8d78_97a3cda7');
         });
+        }
 
         Schema::table('crm_activities', function (Blueprint $table) {
-            $table->foreign('crm_deal_id')->references('id')->on('crm_deals')->onDelete('cascade');
-            $table->index(['company_id', 'crm_deal_id', 'created_at']);
+            $table->index(['company_id', 'crm_deal_id', 'created_at'], 'idx_8d78_d0534431');
         });
 
         $this->seedDefaultStages();

@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('project_timesheets', function (Blueprint $table) {
+        if (!Schema::hasTable('project_timesheets')) {
+            Schema::create('project_timesheets', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('task_id');
             $table->unsignedBigInteger('user_id');
@@ -20,10 +21,10 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('task_id')->references('id')->on('project_tasks')->onDelete('cascade');
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->index(['task_id', 'started_at']);
-            $table->index(['user_id', 'ended_at']);
+            $table->index(['task_id', 'started_at'], 'idx_0a6f_b7201d29');
+            $table->index(['user_id', 'ended_at'], 'idx_0a6f_37db606f');
         });
+        }
     }
 
     public function down(): void

@@ -11,7 +11,7 @@ use Modules\Employees\Models\Employee;
 
 class Departments extends Controller
 {
-    public function index(): Response|mixed
+    public function index(): Response
     {
         $departments = Department::where('company_id', company_id())
             ->withCount('employees')
@@ -22,7 +22,7 @@ class Departments extends Controller
         return $this->response('employees::departments.index', compact('departments'));
     }
 
-    public function create(): Response|mixed
+    public function create(): Response
     {
         $managers = Employee::where('company_id', company_id())
             ->active()
@@ -34,7 +34,7 @@ class Departments extends Controller
         return view('employees::departments.create', compact('managers'));
     }
 
-    public function store(DepartmentStore $request): Response|mixed
+    public function store(DepartmentStore $request): Response
     {
         $department = Department::create([
             'company_id' => company_id(),
@@ -50,7 +50,7 @@ class Departments extends Controller
         return redirect()->route('employees.departments.index');
     }
 
-    public function edit(int $id): Response|mixed
+    public function edit(int $id): Response
     {
         $department = Department::where('company_id', company_id())->findOrFail($id);
 
@@ -64,7 +64,7 @@ class Departments extends Controller
         return view('employees::departments.edit', compact('department', 'managers'));
     }
 
-    public function update(int $id, DepartmentUpdate $request): Response|mixed
+    public function update(int $id, DepartmentUpdate $request): Response
     {
         $department = Department::where('company_id', company_id())->findOrFail($id);
 
@@ -81,7 +81,7 @@ class Departments extends Controller
         return redirect()->route('employees.departments.index');
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $department = Department::where('company_id', company_id())->findOrFail($id);
 

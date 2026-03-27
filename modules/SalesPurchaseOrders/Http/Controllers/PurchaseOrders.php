@@ -22,7 +22,7 @@ use Modules\SalesPurchaseOrders\Notifications\OrderSent;
 
 class PurchaseOrders extends Controller
 {
-    public function index(Request $request): Response|mixed
+    public function index(Request $request): Response
     {
         $query = PurchaseOrder::where('company_id', company_id())
             ->with(['contact', 'items', 'totals']);
@@ -58,7 +58,7 @@ class PurchaseOrders extends Controller
         return $this->response('sales-purchase-orders::purchase-orders.index', compact('purchaseOrders', 'statuses', 'vendors'));
     }
 
-    public function create(): Response|mixed
+    public function create(): Response
     {
         $vendors = Contact::where('company_id', company_id())
             ->where('type', 'vendor')
@@ -96,7 +96,7 @@ class PurchaseOrders extends Controller
         ));
     }
 
-    public function store(PurchaseOrderStore $request): Response|mixed
+    public function store(PurchaseOrderStore $request): Response
     {
         $settings = OrderSetting::getForCompany(company_id());
 
@@ -148,7 +148,7 @@ class PurchaseOrders extends Controller
         return redirect()->route('sales-purchase-orders.purchase-orders.show', $purchaseOrder->id);
     }
 
-    public function show(int $id): Response|mixed
+    public function show(int $id): Response
     {
         $purchaseOrder = PurchaseOrder::where('company_id', company_id())
             ->with(['contact', 'items.taxes', 'totals', 'orderHistories', 'convertedBill', 'parentSalesOrder'])
@@ -157,7 +157,7 @@ class PurchaseOrders extends Controller
         return view('sales-purchase-orders::purchase-orders.show', compact('purchaseOrder'));
     }
 
-    public function edit(int $id): Response|mixed
+    public function edit(int $id): Response
     {
         $purchaseOrder = PurchaseOrder::where('company_id', company_id())
             ->with(['contact', 'items.taxes'])
@@ -198,7 +198,7 @@ class PurchaseOrders extends Controller
         ));
     }
 
-    public function update(int $id, PurchaseOrderUpdate $request): Response|mixed
+    public function update(int $id, PurchaseOrderUpdate $request): Response
     {
         $purchaseOrder = PurchaseOrder::where('company_id', company_id())->findOrFail($id);
 
@@ -251,7 +251,7 @@ class PurchaseOrders extends Controller
         return redirect()->route('sales-purchase-orders.purchase-orders.show', $purchaseOrder->id);
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $purchaseOrder = PurchaseOrder::where('company_id', company_id())->findOrFail($id);
 
@@ -271,7 +271,7 @@ class PurchaseOrders extends Controller
         return redirect()->route('sales-purchase-orders.purchase-orders.index');
     }
 
-    public function send(int $id): Response|mixed
+    public function send(int $id): Response
     {
         $purchaseOrder = PurchaseOrder::where('company_id', company_id())
             ->with('contact')
@@ -303,7 +303,7 @@ class PurchaseOrders extends Controller
         return redirect()->route('sales-purchase-orders.purchase-orders.show', $purchaseOrder->id);
     }
 
-    public function confirm(int $id): Response|mixed
+    public function confirm(int $id): Response
     {
         $purchaseOrder = PurchaseOrder::where('company_id', company_id())->findOrFail($id);
 
@@ -323,7 +323,7 @@ class PurchaseOrders extends Controller
         return redirect()->route('sales-purchase-orders.purchase-orders.show', $purchaseOrder->id);
     }
 
-    public function receive(int $id): Response|mixed
+    public function receive(int $id): Response
     {
         $purchaseOrder = PurchaseOrder::where('company_id', company_id())
             ->with('items')
@@ -358,7 +358,7 @@ class PurchaseOrders extends Controller
         return redirect()->route('sales-purchase-orders.purchase-orders.show', $purchaseOrder->id);
     }
 
-    public function cancel(int $id): Response|mixed
+    public function cancel(int $id): Response
     {
         $purchaseOrder = PurchaseOrder::where('company_id', company_id())->findOrFail($id);
 
@@ -378,7 +378,7 @@ class PurchaseOrders extends Controller
         return redirect()->route('sales-purchase-orders.purchase-orders.show', $purchaseOrder->id);
     }
 
-    public function convertBill(int $id): Response|mixed
+    public function convertBill(int $id): Response
     {
         $purchaseOrder = PurchaseOrder::where('company_id', company_id())
             ->with(['items.taxes', 'totals'])
@@ -481,7 +481,7 @@ class PurchaseOrders extends Controller
         return redirect()->route('sales-purchase-orders.purchase-orders.show', $purchaseOrder->id);
     }
 
-    public function duplicate(int $id): Response|mixed
+    public function duplicate(int $id): Response
     {
         $purchaseOrder = PurchaseOrder::where('company_id', company_id())
             ->with(['items.taxes'])
@@ -587,7 +587,7 @@ class PurchaseOrders extends Controller
             ->header('Content-Disposition', 'inline; filename="' . $filename . '"');
     }
 
-    public function report(Request $request): Response|mixed
+    public function report(Request $request): Response
     {
         $query = PurchaseOrder::where('company_id', company_id())
             ->with(['contact', 'totals']);
@@ -630,12 +630,12 @@ class PurchaseOrders extends Controller
         ));
     }
 
-    public function import(): Response|mixed
+    public function import(): Response
     {
         return view('sales-purchase-orders::purchase-orders.import');
     }
 
-    public function importProcess(Request $request): Response|mixed
+    public function importProcess(Request $request): Response
     {
         $request->validate([
             'import_file' => 'required|file|mimes:csv,txt',
@@ -702,7 +702,7 @@ class PurchaseOrders extends Controller
         return redirect()->route('sales-purchase-orders.purchase-orders.index');
     }
 
-    public function export(): mixed
+    public function export(): \Illuminate\Http\Response
     {
         $purchaseOrders = PurchaseOrder::where('company_id', company_id())
             ->with(['contact', 'items', 'totals'])

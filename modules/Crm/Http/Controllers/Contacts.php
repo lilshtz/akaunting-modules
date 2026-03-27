@@ -22,7 +22,7 @@ class Contacts extends Controller
     {
     }
 
-    public function index(Request $request): Response|mixed
+    public function index(Request $request): Response
     {
         $query = CrmContact::where('company_id', company_id())
             ->with(['crmCompany', 'owner', 'akauntingContact'])
@@ -54,12 +54,12 @@ class Contacts extends Controller
         ));
     }
 
-    public function create(): Response|mixed
+    public function create(): Response
     {
         return view('crm::contacts.create', $this->formOptions());
     }
 
-    public function store(ContactStore $request): Response|mixed
+    public function store(ContactStore $request): Response
     {
         $crmCompany = $this->selectedCrmCompany($request->get('crm_company_id'));
 
@@ -92,7 +92,7 @@ class Contacts extends Controller
         return redirect()->route('crm.contacts.show', $contact->id);
     }
 
-    public function show(int $id): Response|mixed
+    public function show(int $id): Response
     {
         $contact = $this->findContact($id, [
             'crmCompany',
@@ -119,7 +119,7 @@ class Contacts extends Controller
         ));
     }
 
-    public function edit(int $id): Response|mixed
+    public function edit(int $id): Response
     {
         $contact = $this->findContact($id);
 
@@ -129,7 +129,7 @@ class Contacts extends Controller
         ));
     }
 
-    public function update(int $id, ContactUpdate $request): Response|mixed
+    public function update(int $id, ContactUpdate $request): Response
     {
         $contact = $this->findContact($id, ['crmCompany']);
 
@@ -161,7 +161,7 @@ class Contacts extends Controller
         return redirect()->route('crm.contacts.show', $contact->id);
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $contact = $this->findContact($id);
         $name = $contact->name;
@@ -173,12 +173,12 @@ class Contacts extends Controller
         return redirect()->route('crm.contacts.index');
     }
 
-    public function import(): Response|mixed
+    public function import(): Response
     {
         return view('crm::contacts.import', $this->formOptions());
     }
 
-    public function importStore(ImportContacts $request): Response|mixed
+    public function importStore(ImportContacts $request): Response
     {
         $file = new SplFileObject($request->file('file')->getRealPath());
         $file->setFlags(SplFileObject::READ_CSV | SplFileObject::SKIP_EMPTY);

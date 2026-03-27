@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('bank_feed_imports', function (Blueprint $table) {
+        if (!Schema::hasTable('bank_feed_imports')) {
+            Schema::create('bank_feed_imports', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('bank_account_id');
@@ -20,13 +21,14 @@ return new class extends Migration
             $table->timestamp('imported_at')->nullable();
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             $table->index('company_id');
-            $table->index(['company_id', 'bank_account_id']);
+            $table->index(['company_id', 'bank_account_id'], 'idx_f083_3d8f1223');
             $table->index('status');
         });
+        }
 
-        Schema::create('bank_feed_rules', function (Blueprint $table) {
+        if (!Schema::hasTable('bank_feed_rules')) {
+            Schema::create('bank_feed_rules', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->enum('field', ['description', 'vendor', 'amount']);
@@ -38,12 +40,13 @@ return new class extends Migration
             $table->integer('priority')->default(0);
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             $table->index('company_id');
-            $table->index(['company_id', 'enabled', 'priority']);
+            $table->index(['company_id', 'enabled', 'priority'], 'idx_f083_82e2a8cd');
         });
+        }
 
-        Schema::create('bank_feed_transactions', function (Blueprint $table) {
+        if (!Schema::hasTable('bank_feed_transactions')) {
+            Schema::create('bank_feed_transactions', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('import_id');
             $table->unsignedBigInteger('bank_account_id');
@@ -62,8 +65,9 @@ return new class extends Migration
             $table->index('import_id');
             $table->index('bank_account_id');
             $table->index('status');
-            $table->index(['bank_account_id', 'date', 'amount']);
+            $table->index(['bank_account_id', 'date', 'amount'], 'idx_f083_f60a74d0');
         });
+        }
     }
 
     public function down(): void

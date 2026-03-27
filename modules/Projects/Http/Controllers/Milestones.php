@@ -14,7 +14,7 @@ use Modules\Projects\Models\ProjectMilestone;
 
 class Milestones extends Controller
 {
-    public function store(MilestoneStore $request, int $projectId): Response|mixed
+    public function store(MilestoneStore $request, int $projectId): Response
     {
         $project = $this->findProject($projectId);
 
@@ -41,7 +41,7 @@ class Milestones extends Controller
         return redirect()->route('projects.projects.show', ['project' => $project->id, 'tab' => 'milestones']);
     }
 
-    public function edit(int $id): Response|mixed
+    public function edit(int $id): Response
     {
         $milestone = ProjectMilestone::with('project')->findOrFail($id);
         $project = $this->findProject($milestone->project_id);
@@ -55,7 +55,7 @@ class Milestones extends Controller
         ));
     }
 
-    public function update(MilestoneUpdate $request, int $id): Response|mixed
+    public function update(MilestoneUpdate $request, int $id): Response
     {
         $milestone = ProjectMilestone::with('project')->findOrFail($id);
         $project = $this->findProject($milestone->project_id);
@@ -84,7 +84,7 @@ class Milestones extends Controller
         return redirect()->route('projects.projects.show', ['project' => $project->id, 'tab' => 'milestones']);
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $milestone = ProjectMilestone::with('project')->findOrFail($id);
         $project = $this->findProject($milestone->project_id);
@@ -101,7 +101,7 @@ class Milestones extends Controller
         return redirect()->route('projects.projects.show', ['project' => $project->id, 'tab' => 'milestones']);
     }
 
-    public function complete(int $projectId, int $id): Response|mixed
+    public function complete(int $projectId, int $id): Response
     {
         $project = $this->findProject($projectId);
         $milestone = $project->milestones()->findOrFail($id);

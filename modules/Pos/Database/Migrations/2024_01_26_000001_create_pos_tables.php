@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('pos_orders', function (Blueprint $table) {
+        if (!Schema::hasTable('pos_orders')) {
+            Schema::create('pos_orders', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('contact_id')->nullable();
@@ -24,13 +25,13 @@ return new class extends Migration
             $table->string('tab_name')->nullable();
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-            $table->foreign('contact_id')->references('id')->on('contacts')->nullOnDelete();
             $table->unique(['company_id', 'order_number']);
-            $table->index(['company_id', 'status', 'created_at']);
+            $table->index(['company_id', 'status', 'created_at'], 'idx_3225_605dc3a5');
         });
+        }
 
-        Schema::create('pos_order_items', function (Blueprint $table) {
+        if (!Schema::hasTable('pos_order_items')) {
+            Schema::create('pos_order_items', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('order_id');
             $table->unsignedBigInteger('item_id')->nullable();
@@ -44,19 +45,20 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('order_id')->references('id')->on('pos_orders')->onDelete('cascade');
-            $table->foreign('item_id')->references('id')->on('items')->nullOnDelete();
-            $table->index(['order_id', 'item_id']);
+            $table->index(['order_id', 'item_id'], 'idx_3225_34bc780d');
         });
+        }
 
-        Schema::create('pos_settings', function (Blueprint $table) {
+        if (!Schema::hasTable('pos_settings')) {
+            Schema::create('pos_settings', function (Blueprint $table) {
             $table->unsignedBigInteger('company_id')->primary();
             $table->unsignedInteger('receipt_width')->default(80);
             $table->string('default_payment_method', 50)->default('cash');
             $table->boolean('auto_create_invoice')->default(false);
             $table->unsignedBigInteger('next_order_number')->default(1);
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
         });
+        }
     }
 
     public function down(): void

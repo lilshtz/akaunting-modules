@@ -15,7 +15,7 @@ class ClaimReports extends Controller
     {
     }
 
-    public function index(Request $request): Response|mixed
+    public function index(Request $request): Response
     {
         $employees = Employee::where('company_id', company_id())
             ->with('contact')

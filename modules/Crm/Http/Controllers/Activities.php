@@ -11,7 +11,7 @@ use Modules\Crm\Models\CrmContact;
 
 class Activities extends Controller
 {
-    public function index(Request $request): Response|mixed
+    public function index(Request $request): Response
     {
         $query = CrmActivity::where('company_id', company_id())
             ->with(['contact', 'user']);
@@ -27,7 +27,7 @@ class Activities extends Controller
         return $this->response('crm::activities.index', compact('activities'));
     }
 
-    public function store(int $contactId, ActivityStore $request): Response|mixed
+    public function store(int $contactId, ActivityStore $request): Response
     {
         $contact = CrmContact::where('company_id', company_id())->findOrFail($contactId);
 
@@ -47,7 +47,7 @@ class Activities extends Controller
         return redirect()->route('crm.contacts.show', $contact->id);
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $activity = CrmActivity::where('company_id', company_id())->findOrFail($id);
         $contactId = $activity->crm_contact_id;

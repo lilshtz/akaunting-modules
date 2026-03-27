@@ -18,7 +18,7 @@ use Modules\Crm\Models\CrmPipelineStage;
 
 class Deals extends Controller
 {
-    public function index(Request $request): Response|mixed
+    public function index(Request $request): Response
     {
         CrmPipelineStage::ensureDefaults(company_id());
 
@@ -57,14 +57,14 @@ class Deals extends Controller
         ));
     }
 
-    public function create(Request $request): Response|mixed
+    public function create(Request $request): Response
     {
         CrmPipelineStage::ensureDefaults(company_id());
 
         return view('crm::deals.create', $this->formOptions($request->integer('crm_contact_id')));
     }
 
-    public function store(DealStore $request): Response|mixed
+    public function store(DealStore $request): Response
     {
         $contact = $this->findContact($request->integer('crm_contact_id'));
         $stage = $this->findStage($request->integer('stage_id'));
@@ -93,7 +93,7 @@ class Deals extends Controller
         return redirect()->route('crm.deals.show', $deal->id);
     }
 
-    public function show(int $id): Response|mixed
+    public function show(int $id): Response
     {
         $deal = $this->findDeal($id, [
             'contact.crmCompany',
@@ -110,7 +110,7 @@ class Deals extends Controller
         ));
     }
 
-    public function edit(int $id): Response|mixed
+    public function edit(int $id): Response
     {
         $deal = $this->findDeal($id);
 
@@ -120,7 +120,7 @@ class Deals extends Controller
         ));
     }
 
-    public function update(int $id, DealUpdate $request): Response|mixed
+    public function update(int $id, DealUpdate $request): Response
     {
         $deal = $this->findDeal($id, ['stage']);
         $contact = $this->findContact($request->integer('crm_contact_id'));
@@ -156,7 +156,7 @@ class Deals extends Controller
         return redirect()->route('crm.deals.show', $deal->id);
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $deal = $this->findDeal($id);
 
@@ -172,7 +172,7 @@ class Deals extends Controller
         return redirect()->route('crm.deals.index');
     }
 
-    public function move(int $id, DealMove $request): Response|mixed
+    public function move(int $id, DealMove $request): Response
     {
         $deal = $this->findDeal($id, ['stage']);
         $stage = $this->findStage($request->integer('stage_id'));
@@ -194,7 +194,7 @@ class Deals extends Controller
         return redirect()->route('crm.deals.index');
     }
 
-    public function updateStatus(int $id, DealStatusUpdate $request): Response|mixed
+    public function updateStatus(int $id, DealStatusUpdate $request): Response
     {
         $deal = $this->findDeal($id);
         $status = $request->get('status');
@@ -216,7 +216,7 @@ class Deals extends Controller
         return redirect()->route('crm.deals.show', $deal->id);
     }
 
-    public function storeActivity(int $id, ActivityStore $request): Response|mixed
+    public function storeActivity(int $id, ActivityStore $request): Response
     {
         $deal = $this->findDeal($id);
 

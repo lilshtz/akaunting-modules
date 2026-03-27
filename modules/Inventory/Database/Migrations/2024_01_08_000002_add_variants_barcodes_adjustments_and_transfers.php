@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('inventory_variants', function (Blueprint $table) {
+        if (!Schema::hasTable('inventory_variants')) {
+            Schema::create('inventory_variants', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('item_id');
             $table->string('name');
@@ -18,24 +19,24 @@ return new class extends Migration
             $table->decimal('sale_price', 15, 4)->nullable();
             $table->timestamps();
 
-            $table->foreign('item_id')->references('id')->on('items')->onDelete('cascade');
-            $table->index(['item_id', 'name']);
+            $table->index(['item_id', 'name'], 'idx_183d_e37eb0ca');
         });
+        }
 
         Schema::table('inventory_stock', function (Blueprint $table) {
-            $table->dropUnique(['item_id', 'warehouse_id']);
             $table->unsignedBigInteger('variant_id')->nullable()->after('item_id');
             $table->foreign('variant_id')->references('id')->on('inventory_variants')->nullOnDelete();
-            $table->index(['item_id', 'variant_id', 'warehouse_id'], 'inventory_stock_item_variant_warehouse_index');
+            $table->index(['item_id', 'variant_id', 'warehouse_id'], 'idx_183d_8104efd5');
         });
 
         Schema::table('inventory_history', function (Blueprint $table) {
             $table->unsignedBigInteger('variant_id')->nullable()->after('item_id');
             $table->foreign('variant_id')->references('id')->on('inventory_variants')->nullOnDelete();
-            $table->index(['company_id', 'variant_id'], 'inventory_history_company_variant_index');
+            $table->index(['company_id', 'variant_id'], 'idx_183d_606f7e4a');
         });
 
-        Schema::create('inventory_adjustments', function (Blueprint $table) {
+        if (!Schema::hasTable('inventory_adjustments')) {
+            Schema::create('inventory_adjustments', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('warehouse_id');
@@ -48,15 +49,15 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id');
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             $table->foreign('warehouse_id')->references('id')->on('inventory_warehouses')->onDelete('cascade');
-            $table->foreign('item_id')->references('id')->on('items')->onDelete('cascade');
             $table->foreign('variant_id')->references('id')->on('inventory_variants')->nullOnDelete();
-            $table->index(['company_id', 'warehouse_id', 'date'], 'inventory_adjustments_company_warehouse_date_index');
-            $table->index(['item_id', 'variant_id'], 'inventory_adjustments_item_variant_index');
+            $table->index(['company_id', 'warehouse_id', 'date'], 'idx_183d_11477874');
+            $table->index(['item_id', 'variant_id'], 'idx_183d_6ae9628d');
         });
+        }
 
-        Schema::create('inventory_transfer_orders', function (Blueprint $table) {
+        if (!Schema::hasTable('inventory_transfer_orders')) {
+            Schema::create('inventory_transfer_orders', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('from_warehouse_id');
@@ -66,13 +67,14 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             $table->foreign('from_warehouse_id')->references('id')->on('inventory_warehouses')->onDelete('cascade');
             $table->foreign('to_warehouse_id')->references('id')->on('inventory_warehouses')->onDelete('cascade');
-            $table->index(['company_id', 'status', 'date'], 'inventory_transfer_orders_company_status_date_index');
+            $table->index(['company_id', 'status', 'date'], 'idx_183d_9bedbef9');
         });
+        }
 
-        Schema::create('inventory_transfer_items', function (Blueprint $table) {
+        if (!Schema::hasTable('inventory_transfer_items')) {
+            Schema::create('inventory_transfer_items', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('transfer_order_id');
             $table->unsignedBigInteger('item_id');
@@ -81,30 +83,32 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('transfer_order_id')->references('id')->on('inventory_transfer_orders')->onDelete('cascade');
-            $table->foreign('item_id')->references('id')->on('items')->onDelete('cascade');
             $table->foreign('variant_id')->references('id')->on('inventory_variants')->nullOnDelete();
-            $table->index(['transfer_order_id', 'item_id'], 'inventory_transfer_items_order_item_index');
+            $table->index(['transfer_order_id', 'item_id'], 'idx_183d_8265b40a');
         });
+        }
 
-        Schema::create('inventory_item_groups', function (Blueprint $table) {
+        if (!Schema::hasTable('inventory_item_groups')) {
+            Schema::create('inventory_item_groups', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->string('name');
             $table->text('description')->nullable();
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-            $table->index(['company_id', 'name']);
+            $table->index(['company_id', 'name'], 'idx_183d_516a0742');
         });
+        }
 
-        Schema::create('inventory_item_group_items', function (Blueprint $table) {
+        if (!Schema::hasTable('inventory_item_group_items')) {
+            Schema::create('inventory_item_group_items', function (Blueprint $table) {
             $table->unsignedBigInteger('item_group_id');
             $table->unsignedBigInteger('item_id');
 
             $table->primary(['item_group_id', 'item_id']);
             $table->foreign('item_group_id')->references('id')->on('inventory_item_groups')->onDelete('cascade');
-            $table->foreign('item_id')->references('id')->on('items')->onDelete('cascade');
         });
+        }
     }
 
     public function down(): void
@@ -117,13 +121,11 @@ return new class extends Migration
 
         Schema::table('inventory_history', function (Blueprint $table) {
             $table->dropForeign(['variant_id']);
-            $table->dropIndex('inventory_history_company_variant_index');
             $table->dropColumn('variant_id');
         });
 
         Schema::table('inventory_stock', function (Blueprint $table) {
             $table->dropForeign(['variant_id']);
-            $table->dropIndex('inventory_stock_item_variant_warehouse_index');
             $table->dropColumn('variant_id');
             $table->unique(['item_id', 'warehouse_id']);
         });

@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('stripe_settings', function (Blueprint $table) {
+        if (!Schema::hasTable('stripe_settings')) {
+            Schema::create('stripe_settings', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->text('api_key')->nullable();
@@ -17,11 +18,12 @@ return new class extends Migration
             $table->boolean('enabled')->default(true);
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             $table->index('company_id');
         });
+        }
 
-        Schema::create('stripe_payments', function (Blueprint $table) {
+        if (!Schema::hasTable('stripe_payments')) {
+            Schema::create('stripe_payments', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('document_id');
@@ -34,13 +36,12 @@ return new class extends Migration
             $table->string('refund_id')->nullable();
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-            $table->foreign('document_id')->references('id')->on('documents')->onDelete('cascade');
             $table->index('company_id');
             $table->index('document_id');
             $table->index('stripe_payment_intent_id');
             $table->index('stripe_session_id');
         });
+        }
     }
 
     public function down(): void

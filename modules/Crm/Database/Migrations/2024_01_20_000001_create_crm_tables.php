@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('crm_companies', function (Blueprint $table) {
+        if (!Schema::hasTable('crm_companies')) {
+            Schema::create('crm_companies', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->string('name');
@@ -17,11 +18,12 @@ return new class extends Migration
             $table->string('default_stage', 50)->default('lead');
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-            $table->index(['company_id', 'name']);
+            $table->index(['company_id', 'name'], 'idx_e371_516a0742');
         });
+        }
 
-        Schema::create('crm_contacts', function (Blueprint $table) {
+        if (!Schema::hasTable('crm_contacts')) {
+            Schema::create('crm_contacts', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('crm_company_id')->nullable();
@@ -36,17 +38,15 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-            $table->foreign('crm_company_id')->references('id')->on('crm_companies')->onDelete('set null');
-            $table->foreign('owner_user_id')->references('id')->on('users')->onDelete('set null');
-            $table->foreign('akaunting_contact_id')->references('id')->on('contacts')->onDelete('set null');
-            $table->index(['company_id', 'stage']);
-            $table->index(['company_id', 'source']);
-            $table->index(['company_id', 'crm_company_id']);
-            $table->index(['company_id', 'email']);
+            $table->index(['company_id', 'stage'], 'idx_e371_f50a1294');
+            $table->index(['company_id', 'source'], 'idx_e371_3b47c6c9');
+            $table->index(['company_id', 'crm_company_id'], 'idx_e371_a3ec16c4');
+            $table->index(['company_id', 'email'], 'idx_e371_f851eb43');
         });
+        }
 
-        Schema::create('crm_activities', function (Blueprint $table) {
+        if (!Schema::hasTable('crm_activities')) {
+            Schema::create('crm_activities', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('crm_contact_id')->nullable();
@@ -58,13 +58,11 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id')->nullable();
             $table->timestamp('created_at')->useCurrent();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-            $table->foreign('crm_contact_id')->references('id')->on('crm_contacts')->onDelete('cascade');
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
-            $table->index(['company_id', 'crm_contact_id', 'created_at']);
-            $table->index(['company_id', 'type']);
-            $table->index(['company_id', 'scheduled_at']);
+            $table->index(['company_id', 'crm_contact_id', 'created_at'], 'idx_e371_d2fcfd63');
+            $table->index(['company_id', 'type'], 'idx_e371_ca627f5b');
+            $table->index(['company_id', 'scheduled_at'], 'idx_e371_8f2257a3');
         });
+        }
     }
 
     public function down(): void

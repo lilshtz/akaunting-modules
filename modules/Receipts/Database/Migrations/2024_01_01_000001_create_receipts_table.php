@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('receipts', function (Blueprint $table) {
+        if (!Schema::hasTable('receipts')) {
+            Schema::create('receipts', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->string('image_path');
@@ -27,13 +28,14 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             $table->index('company_id');
             $table->index('status');
-            $table->index(['company_id', 'vendor_name', 'amount', 'receipt_date']);
+            $table->index(['company_id', 'vendor_name', 'amount', 'receipt_date'], 'idx_8e53_52509017');
         });
+        }
 
-        Schema::create('receipt_categorization_rules', function (Blueprint $table) {
+        if (!Schema::hasTable('receipt_categorization_rules')) {
+            Schema::create('receipt_categorization_rules', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->string('vendor_pattern');
@@ -43,9 +45,9 @@ return new class extends Migration
             $table->integer('priority')->default(0);
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             $table->index('company_id');
         });
+        }
     }
 
     public function down(): void

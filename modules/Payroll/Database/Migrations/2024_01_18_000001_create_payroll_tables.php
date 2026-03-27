@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('pay_items', function (Blueprint $table) {
+        if (!Schema::hasTable('pay_items')) {
+            Schema::create('pay_items', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->enum('type', ['benefit', 'deduction']);
@@ -18,11 +19,12 @@ return new class extends Migration
             $table->boolean('enabled')->default(true);
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->cascadeOnDelete();
-            $table->index(['company_id', 'type']);
+            $table->index(['company_id', 'type'], 'idx_8788_ca627f5b');
         });
+        }
 
-        Schema::create('pay_calendars', function (Blueprint $table) {
+        if (!Schema::hasTable('pay_calendars')) {
+            Schema::create('pay_calendars', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->string('name');
@@ -32,11 +34,12 @@ return new class extends Migration
             $table->boolean('enabled')->default(true);
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->cascadeOnDelete();
-            $table->index(['company_id', 'enabled']);
+            $table->index(['company_id', 'enabled'], 'idx_8788_8272d36f');
         });
+        }
 
-        Schema::create('pay_calendar_employees', function (Blueprint $table) {
+        if (!Schema::hasTable('pay_calendar_employees')) {
+            Schema::create('pay_calendar_employees', function (Blueprint $table) {
             $table->unsignedBigInteger('pay_calendar_id');
             $table->unsignedBigInteger('employee_id');
 
@@ -44,8 +47,10 @@ return new class extends Migration
             $table->foreign('pay_calendar_id')->references('id')->on('pay_calendars')->cascadeOnDelete();
             $table->foreign('employee_id')->references('id')->on('employees')->cascadeOnDelete();
         });
+        }
 
-        Schema::create('payroll_runs', function (Blueprint $table) {
+        if (!Schema::hasTable('payroll_runs')) {
+            Schema::create('payroll_runs', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('pay_calendar_id');
@@ -59,13 +64,13 @@ return new class extends Migration
             $table->timestamp('processed_at')->nullable();
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->cascadeOnDelete();
             $table->foreign('pay_calendar_id')->references('id')->on('pay_calendars')->cascadeOnDelete();
-            $table->foreign('approved_by')->references('id')->on('users')->nullOnDelete();
-            $table->index(['company_id', 'status']);
+            $table->index(['company_id', 'status'], 'idx_8788_1915fc9e');
         });
+        }
 
-        Schema::create('payroll_run_employees', function (Blueprint $table) {
+        if (!Schema::hasTable('payroll_run_employees')) {
+            Schema::create('payroll_run_employees', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('payroll_run_id');
             $table->unsignedBigInteger('employee_id');
@@ -80,6 +85,7 @@ return new class extends Migration
             $table->foreign('employee_id')->references('id')->on('employees')->cascadeOnDelete();
             $table->unique(['payroll_run_id', 'employee_id']);
         });
+        }
     }
 
     public function down(): void

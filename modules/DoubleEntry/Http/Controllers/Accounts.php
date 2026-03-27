@@ -11,7 +11,7 @@ use Modules\DoubleEntry\Models\Account;
 
 class Accounts extends Controller
 {
-    public function index(): Response|mixed
+    public function index(): Response
     {
         $accounts = Account::collect([
             'company_id' => company_id(),
@@ -30,7 +30,7 @@ class Accounts extends Controller
         return $this->response('double-entry::accounts.index', compact('accounts', 'accountsByType', 'types'));
     }
 
-    public function create(): Response|mixed
+    public function create(): Response
     {
         $types = [
             'asset' => trans('double-entry::general.types.asset'),
@@ -50,7 +50,7 @@ class Accounts extends Controller
         return view('double-entry::accounts.create', compact('types', 'parents'));
     }
 
-    public function store(AccountStore $request): Response|mixed
+    public function store(AccountStore $request): Response
     {
         $account = Account::create([
             'company_id' => company_id(),
@@ -70,7 +70,7 @@ class Accounts extends Controller
         return redirect()->route('double-entry.accounts.index');
     }
 
-    public function edit(int $id): Response|mixed
+    public function edit(int $id): Response
     {
         $account = Account::where('company_id', company_id())->findOrFail($id);
 
@@ -93,7 +93,7 @@ class Accounts extends Controller
         return view('double-entry::accounts.edit', compact('account', 'types', 'parents'));
     }
 
-    public function update(int $id, AccountUpdate $request): Response|mixed
+    public function update(int $id, AccountUpdate $request): Response
     {
         $account = Account::where('company_id', company_id())->findOrFail($id);
 
@@ -114,7 +114,7 @@ class Accounts extends Controller
         return redirect()->route('double-entry.accounts.index');
     }
 
-    public function destroy(int $id): Response|mixed
+    public function destroy(int $id): Response
     {
         $account = Account::where('company_id', company_id())->findOrFail($id);
 
@@ -127,12 +127,12 @@ class Accounts extends Controller
         return redirect()->route('double-entry.accounts.index');
     }
 
-    public function import(): Response|mixed
+    public function import(): Response
     {
         return view('double-entry::accounts.import');
     }
 
-    public function importProcess(Request $request): Response|mixed
+    public function importProcess(Request $request): Response
     {
         $request->validate([
             'import' => 'required|file|mimes:csv,txt',

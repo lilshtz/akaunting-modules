@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('order_settings', function (Blueprint $table) {
+        if (!Schema::hasTable('order_settings')) {
+            Schema::create('order_settings', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id')->unique();
             $table->string('so_prefix', 20)->default('SO-');
@@ -19,10 +20,11 @@ return new class extends Migration
             $table->string('template', 50)->default('default');
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
         });
+        }
 
-        Schema::create('order_histories', function (Blueprint $table) {
+        if (!Schema::hasTable('order_histories')) {
+            Schema::create('order_histories', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->unsignedBigInteger('document_id');
@@ -31,10 +33,9 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-            $table->foreign('document_id')->references('id')->on('documents')->onDelete('cascade');
-            $table->index(['document_id', 'status']);
+            $table->index(['document_id', 'status'], 'idx_d117_7b73ea75');
         });
+        }
     }
 
     public function down(): void

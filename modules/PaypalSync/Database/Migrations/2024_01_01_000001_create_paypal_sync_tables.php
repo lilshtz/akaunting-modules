@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('paypal_sync_settings', function (Blueprint $table) {
+        if (!Schema::hasTable('paypal_sync_settings')) {
+            Schema::create('paypal_sync_settings', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
             $table->text('client_id')->nullable();
@@ -19,11 +20,12 @@ return new class extends Migration
             $table->boolean('enabled')->default(true);
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             $table->index('company_id');
         });
+        }
 
-        Schema::create('paypal_sync_transactions', function (Blueprint $table) {
+        if (!Schema::hasTable('paypal_sync_transactions')) {
+            Schema::create('paypal_sync_transactions', function (Blueprint $table) {
             $table->id();
             $table->string('paypal_transaction_id')->unique();
             $table->unsignedBigInteger('company_id');
@@ -37,11 +39,11 @@ return new class extends Migration
             $table->json('raw_json')->nullable();
             $table->timestamps();
 
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             $table->index('company_id');
             $table->index('paypal_transaction_id');
             $table->index('payer_email');
         });
+        }
     }
 
     public function down(): void
