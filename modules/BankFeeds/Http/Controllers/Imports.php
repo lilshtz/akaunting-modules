@@ -108,7 +108,16 @@ class Imports extends Controller
 
         $mapping = $request->get('mapping');
         $path = $request->get('path');
+
+        if (! str_starts_with($path, 'bank-feeds/' . company_id() . '/')) {
+            abort(403);
+        }
+
         $fullPath = Storage::disk('public')->path($path);
+
+        if (! Storage::disk('public')->exists($path)) {
+            abort(404);
+        }
 
         $import->update([
             'status' => BankFeedImport::STATUS_PROCESSING,

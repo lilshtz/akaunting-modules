@@ -55,6 +55,14 @@ class Settings extends Controller
         ];
 
         if ($settings) {
+            if ($request->input('client_id') === '••••••••') {
+                unset($data['client_id']);
+            }
+
+            if ($request->input('client_secret') === '••••••••') {
+                unset($data['client_secret']);
+            }
+
             $settings->update($data);
         } else {
             $settings = PaypalSyncSettings::create($data);

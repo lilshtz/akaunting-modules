@@ -101,7 +101,7 @@ class SalesOrders extends Controller
     {
         $settings = OrderSetting::getForCompany(company_id());
 
-        $contact = Contact::findOrFail($request->get('contact_id'));
+        $contact = Contact::where('company_id', company_id())->findOrFail($request->get('contact_id'));
 
         $salesOrder = SalesOrder::create([
             'company_id' => company_id(),
@@ -214,7 +214,7 @@ class SalesOrders extends Controller
             return redirect()->route('sales-purchase-orders.sales-orders.show', $salesOrder->id);
         }
 
-        $contact = Contact::findOrFail($request->get('contact_id'));
+        $contact = Contact::where('company_id', company_id())->findOrFail($request->get('contact_id'));
 
         $salesOrder->update([
             'issued_at' => $request->get('issued_at'),
@@ -946,7 +946,7 @@ class SalesOrders extends Controller
             $taxId = $item['tax_id'] ?? null;
 
             if ($taxId) {
-                $tax = Tax::find($taxId);
+                $tax = Tax::where('company_id', company_id())->find($taxId);
                 if ($tax) {
                     $taxAmount = $subtotal * ($tax->rate / 100);
                 }

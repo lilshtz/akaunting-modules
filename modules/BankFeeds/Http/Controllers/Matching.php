@@ -73,7 +73,8 @@ class Matching extends Controller
         })->findOrFail($id);
 
         // Verify the Akaunting transaction exists and belongs to the same account
-        Transaction::where('account_id', $bankTxn->bank_account_id)
+        Transaction::where('company_id', company_id())
+            ->where('account_id', $bankTxn->bank_account_id)
             ->findOrFail($request->get('transaction_id'));
 
         $this->matcher->applyMatch($bankTxn, $request->get('transaction_id'), $request->get('confidence'));

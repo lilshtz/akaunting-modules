@@ -16,7 +16,7 @@ class EmployeeDocuments extends Controller
         $employee = Employee::where('company_id', company_id())->findOrFail($employeeId);
 
         $request->validate([
-            'file' => 'required|file|max:10240',
+            'file' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png,webp|max:10240',
             'name' => 'required|string|max:255',
             'type' => 'required|in:w9,insurance,license,agreement,other',
             'notes' => 'nullable|string',

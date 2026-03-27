@@ -21,7 +21,7 @@
                                 <x-form.group.text
                                     name="client_id"
                                     label="{{ trans('paypal-sync::general.client_id') }}"
-                                    :value="$settings->client_id"
+                                    :value="$settings->client_id ? '••••••••' : ''"
                                     form-group-class="sm:col-span-6"
                                     type="password"
                                 />
@@ -29,7 +29,7 @@
                                 <x-form.group.text
                                     name="client_secret"
                                     label="{{ trans('paypal-sync::general.client_secret') }}"
-                                    :value="$settings->client_secret"
+                                    :value="$settings->client_secret ? '••••••••' : ''"
                                     form-group-class="sm:col-span-6"
                                     type="password"
                                 />

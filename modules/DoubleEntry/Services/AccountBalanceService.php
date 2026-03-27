@@ -28,7 +28,13 @@ class AccountBalanceService
      */
     public function getBalance(int $accountId, ?string $asOfDate = null, string $basis = 'accrual'): float
     {
-        $account = Account::find($accountId);
+        $accountQuery = Account::query();
+
+        if (function_exists('company_id') && company_id()) {
+            $accountQuery->where('company_id', company_id());
+        }
+
+        $account = $accountQuery->find($accountId);
         if (! $account) {
             return 0;
         }
@@ -107,7 +113,13 @@ class AccountBalanceService
      */
     public function getRunningBalance(int $accountId, ?string $dateFrom = null, ?string $dateTo = null, string $basis = 'accrual'): array
     {
-        $account = Account::find($accountId);
+        $accountQuery = Account::query();
+
+        if (function_exists('company_id') && company_id()) {
+            $accountQuery->where('company_id', company_id());
+        }
+
+        $account = $accountQuery->find($accountId);
         if (! $account) {
             return [];
         }

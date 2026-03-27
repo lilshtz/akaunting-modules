@@ -100,7 +100,7 @@ class PurchaseOrders extends Controller
     {
         $settings = OrderSetting::getForCompany(company_id());
 
-        $contact = Contact::findOrFail($request->get('contact_id'));
+        $contact = Contact::where('company_id', company_id())->findOrFail($request->get('contact_id'));
 
         $purchaseOrder = PurchaseOrder::create([
             'company_id' => company_id(),
@@ -207,7 +207,7 @@ class PurchaseOrders extends Controller
             return redirect()->route('sales-purchase-orders.purchase-orders.show', $purchaseOrder->id);
         }
 
-        $contact = Contact::findOrFail($request->get('contact_id'));
+        $contact = Contact::where('company_id', company_id())->findOrFail($request->get('contact_id'));
 
         $purchaseOrder->update([
             'issued_at' => $request->get('issued_at'),
@@ -768,7 +768,7 @@ class PurchaseOrders extends Controller
             $taxId = $item['tax_id'] ?? null;
 
             if ($taxId) {
-                $tax = Tax::find($taxId);
+                $tax = Tax::where('company_id', company_id())->find($taxId);
                 if ($tax) {
                     $taxAmount = $subtotal * ($tax->rate / 100);
                 }

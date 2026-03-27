@@ -43,7 +43,15 @@ class StripeSettings extends Model
      */
     public function getApiKeyAttribute($value)
     {
-        return $value ? decrypt($value) : null;
+        if (! $value) {
+            return null;
+        }
+
+        try {
+            return decrypt($value);
+        } catch (\Throwable $e) {
+            return $value;
+        }
     }
 
     /**
@@ -65,7 +73,15 @@ class StripeSettings extends Model
      */
     public function getWebhookSecretAttribute($value)
     {
-        return $value ? decrypt($value) : null;
+        if (! $value) {
+            return null;
+        }
+
+        try {
+            return decrypt($value);
+        } catch (\Throwable $e) {
+            return $value;
+        }
     }
 
     /**

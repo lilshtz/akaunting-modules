@@ -95,7 +95,9 @@ class DebitNotes extends Controller
     public function store(DebitNoteStore $request): Response
     {
         $settings = NoteSetting::getForCompany(company_id());
-        $linkedBill = Document::findOrFail($request->get('parent_id'));
+        $linkedBill = Document::where('company_id', company_id())
+            ->where('type', Document::BILL_TYPE)
+            ->findOrFail($request->get('parent_id'));
 
         $debitNote = DebitNote::create([
             'company_id' => company_id(),
@@ -197,7 +199,9 @@ class DebitNotes extends Controller
             return redirect()->route('credit-debit-notes.debit-notes.show', $debitNote->id);
         }
 
-        $linkedBill = Document::findOrFail($request->get('parent_id'));
+        $linkedBill = Document::where('company_id', company_id())
+            ->where('type', Document::BILL_TYPE)
+            ->findOrFail($request->get('parent_id'));
 
         $debitNote->update([
             'issued_at' => $request->get('issued_at'),
@@ -465,7 +469,7 @@ class DebitNotes extends Controller
             $taxId = $item['tax_id'] ?? null;
 
             if ($taxId) {
-                $tax = Tax::find($taxId);
+                $tax = Tax::where('company_id', company_id())->find($taxId);
                 if ($tax) {
                     $taxAmount = $subtotal * ($tax->rate / 100);
                 }

@@ -162,7 +162,7 @@ class Webhook extends Controller
         }
 
         // Fire PaymentReceived event to create the transaction in Akaunting
-        $document = Document::find($documentId);
+        $document = Document::where('company_id', $companyId)->find($documentId);
 
         if ($document) {
             $request = request();

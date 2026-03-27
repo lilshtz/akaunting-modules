@@ -50,7 +50,7 @@ class Tasks extends Controller
 
     public function edit(int $id): Response
     {
-        $task = ProjectTask::with(['project', 'milestone', 'assignee'])->findOrFail($id);
+        $task = $this->findTask($id, ['project', 'milestone', 'assignee']);
         $project = $this->findProject($task->project_id);
         $currentTimer = ProjectTimesheet::where('task_id', $task->id)
             ->where('user_id', auth()->id())
@@ -70,7 +70,7 @@ class Tasks extends Controller
 
     public function update(TaskUpdate $request, int $id): Response
     {
-        $task = ProjectTask::with('project')->findOrFail($id);
+        $task = $this->findTask($id, ['project']);
         $project = $this->findProject($task->project_id);
         $oldStatus = $task->status;
 
@@ -98,7 +98,7 @@ class Tasks extends Controller
 
     public function destroy(int $id): Response
     {
-        $task = ProjectTask::with('project')->findOrFail($id);
+        $task = $this->findTask($id, ['project']);
         $project = $this->findProject($task->project_id);
         $name = $task->name;
 
@@ -139,6 +139,14 @@ class Tasks extends Controller
     protected function findProject(int $id): Project
     {
         return Project::where('company_id', company_id())->findOrFail($id);
+    }
+
+    protected function findTask(int $id, array $relations = []): ProjectTask
+    {
+        return ProjectTask::query()
+            ->with($relations)
+            ->whereHas('project', fn ($query) => $query->where('company_id', company_id()))
+            ->findOrFail($id);
     }
 
     protected function formData(Project $project): array

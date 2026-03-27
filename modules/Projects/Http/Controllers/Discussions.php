@@ -31,7 +31,7 @@ class Discussions extends Controller
 
     public function update(DiscussionUpdate $request, int $id): Response
     {
-        $discussion = ProjectDiscussion::with('project')->findOrFail($id);
+        $discussion = $this->findDiscussion($id);
         $project = $this->findProject($discussion->project_id);
 
         $discussion->update([
@@ -45,7 +45,7 @@ class Discussions extends Controller
 
     public function destroy(int $id): Response
     {
-        $discussion = ProjectDiscussion::with('project')->findOrFail($id);
+        $discussion = $this->findDiscussion($id);
         $project = $this->findProject($discussion->project_id);
 
         $discussion->delete();
@@ -58,5 +58,13 @@ class Discussions extends Controller
     protected function findProject(int $id): Project
     {
         return Project::where('company_id', company_id())->findOrFail($id);
+    }
+
+    protected function findDiscussion(int $id): ProjectDiscussion
+    {
+        return ProjectDiscussion::query()
+            ->with('project')
+            ->whereHas('project', fn ($query) => $query->where('company_id', company_id()))
+            ->findOrFail($id);
     }
 }

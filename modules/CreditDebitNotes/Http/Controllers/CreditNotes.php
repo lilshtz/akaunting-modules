@@ -96,7 +96,9 @@ class CreditNotes extends Controller
     public function store(CreditNoteStore $request): Response
     {
         $settings = NoteSetting::getForCompany(company_id());
-        $linkedInvoice = Document::findOrFail($request->get('parent_id'));
+        $linkedInvoice = Document::where('company_id', company_id())
+            ->where('type', Document::INVOICE_TYPE)
+            ->findOrFail($request->get('parent_id'));
 
         $creditNote = CreditNote::create([
             'company_id' => company_id(),
@@ -208,7 +210,9 @@ class CreditNotes extends Controller
             return redirect()->route('credit-debit-notes.credit-notes.show', $creditNote->id);
         }
 
-        $linkedInvoice = Document::findOrFail($request->get('parent_id'));
+        $linkedInvoice = Document::where('company_id', company_id())
+            ->where('type', Document::INVOICE_TYPE)
+            ->findOrFail($request->get('parent_id'));
 
         $creditNote->update([
             'issued_at' => $request->get('issued_at'),
@@ -575,7 +579,7 @@ class CreditNotes extends Controller
             $taxId = $item['tax_id'] ?? null;
 
             if ($taxId) {
-                $tax = Tax::find($taxId);
+                $tax = Tax::where('company_id', company_id())->find($taxId);
                 if ($tax) {
                     $taxAmount = $subtotal * ($tax->rate / 100);
                 }

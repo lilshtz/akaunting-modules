@@ -42,7 +42,15 @@ class PaypalSyncSettings extends Model
      */
     public function getClientIdAttribute($value)
     {
-        return $value ? decrypt($value) : null;
+        if (! $value) {
+            return null;
+        }
+
+        try {
+            return decrypt($value);
+        } catch (\Throwable $e) {
+            return $value;
+        }
     }
 
     /**
@@ -64,7 +72,15 @@ class PaypalSyncSettings extends Model
      */
     public function getClientSecretAttribute($value)
     {
-        return $value ? decrypt($value) : null;
+        if (! $value) {
+            return null;
+        }
+
+        try {
+            return decrypt($value);
+        } catch (\Throwable $e) {
+            return $value;
+        }
     }
 
     /**

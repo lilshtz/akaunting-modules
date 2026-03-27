@@ -47,6 +47,8 @@ class Reconciliation extends Controller
             'closing_balance' => 'required|numeric',
         ]);
 
+        Account::where('company_id', company_id())->findOrFail($request->integer('bank_account_id'));
+
         $reconciliation = BankFeedReconciliation::create([
             'company_id' => company_id(),
             'bank_account_id' => $request->get('bank_account_id'),
@@ -84,7 +86,7 @@ class Reconciliation extends Controller
         // Calculate reconciliation totals
         $totals = $this->calculateTotals($reconciliation, $bankTransactions);
 
-        $account = Account::find($reconciliation->bank_account_id);
+        $account = Account::where('company_id', company_id())->find($reconciliation->bank_account_id);
 
         return view('bank-feeds::reconciliation.show', compact(
             'reconciliation', 'bankTransactions', 'totals', 'account'
@@ -104,7 +106,9 @@ class Reconciliation extends Controller
             'transaction_id' => 'required|integer',
         ]);
 
-        $bankTxn = BankFeedTransaction::findOrFail($request->get('bank_feed_transaction_id'));
+        $bankTxn = BankFeedTransaction::whereHas('import', function ($query) {
+            $query->where('company_id', company_id());
+        })->findOrFail($request->get('bank_feed_transaction_id'));
 
         $this->matcher->applyMatch($bankTxn, $request->get('transaction_id'), 100.0);
 
@@ -129,7 +133,9 @@ class Reconciliation extends Controller
             'bank_feed_transaction_id' => 'required|integer',
         ]);
 
-        $bankTxn = BankFeedTransaction::findOrFail($request->get('bank_feed_transaction_id'));
+        $bankTxn = BankFeedTransaction::whereHas('import', function ($query) {
+            $query->where('company_id', company_id());
+        })->findOrFail($request->get('bank_feed_transaction_id'));
 
         $this->matcher->unmatch($bankTxn);
         $bankTxn->update(['reconciliation_id' => null]);

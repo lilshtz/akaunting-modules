@@ -116,7 +116,7 @@ class Estimates extends Controller
     {
         $settings = EstimateSetting::getForCompany(company_id());
 
-        $contact = Contact::findOrFail($request->get('contact_id'));
+        $contact = Contact::where('company_id', company_id())->findOrFail($request->get('contact_id'));
 
         $estimate = Estimate::create([
             'company_id' => company_id(),
@@ -223,7 +223,7 @@ class Estimates extends Controller
             return redirect()->route('estimates.estimates.show', $estimate->id);
         }
 
-        $contact = Contact::findOrFail($request->get('contact_id'));
+        $contact = Contact::where('company_id', company_id())->findOrFail($request->get('contact_id'));
 
         $estimate->update([
             'issued_at' => $request->get('issued_at'),
@@ -615,7 +615,7 @@ class Estimates extends Controller
             $taxId = $item['tax_id'] ?? null;
 
             if ($taxId) {
-                $tax = Tax::find($taxId);
+                $tax = Tax::where('company_id', company_id())->find($taxId);
                 if ($tax) {
                     $taxAmount = $subtotal * ($tax->rate / 100);
                 }

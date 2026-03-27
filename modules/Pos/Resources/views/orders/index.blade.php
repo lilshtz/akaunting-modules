@@ -141,8 +141,8 @@
 
     <script>
         (() => {
-            const products = {!! $productJson !!};
-            const contacts = {!! $contactJson !!};
+            const products = @json($products->values());
+            const contacts = @json($contacts->values());
             const storageKey = 'akaunting-pos-tabs';
             const searchInput = document.getElementById('product-search');
             const tabStrip = document.getElementById('tab-strip');

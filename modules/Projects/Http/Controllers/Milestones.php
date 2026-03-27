@@ -43,7 +43,7 @@ class Milestones extends Controller
 
     public function edit(int $id): Response
     {
-        $milestone = ProjectMilestone::with('project')->findOrFail($id);
+        $milestone = $this->findMilestone($id);
         $project = $this->findProject($milestone->project_id);
 
         return view('projects::milestones.edit', array_merge(
@@ -57,7 +57,7 @@ class Milestones extends Controller
 
     public function update(MilestoneUpdate $request, int $id): Response
     {
-        $milestone = ProjectMilestone::with('project')->findOrFail($id);
+        $milestone = $this->findMilestone($id);
         $project = $this->findProject($milestone->project_id);
         $wasCompleted = $milestone->completed_at !== null;
 
@@ -86,7 +86,7 @@ class Milestones extends Controller
 
     public function destroy(int $id): Response
     {
-        $milestone = ProjectMilestone::with('project')->findOrFail($id);
+        $milestone = $this->findMilestone($id);
         $project = $this->findProject($milestone->project_id);
         $name = $milestone->name;
 
@@ -129,6 +129,14 @@ class Milestones extends Controller
     protected function findProject(int $id): Project
     {
         return Project::where('company_id', company_id())->findOrFail($id);
+    }
+
+    protected function findMilestone(int $id): ProjectMilestone
+    {
+        return ProjectMilestone::query()
+            ->with('project')
+            ->whereHas('project', fn ($query) => $query->where('company_id', company_id()))
+            ->findOrFail($id);
     }
 
     protected function projectFormData(Project $project): array
