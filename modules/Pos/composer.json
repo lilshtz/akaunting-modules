@@ -1,0 +1,11 @@
+{
+    "name": "akaunting/pos",
+    "description": "Point of sale module with multi-tab checkout, receipts, refunds, and daily sales reporting for Akaunting",
+    "type": "akaunting-module",
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Modules\\Pos\\": ""
+        }
+    }
+}
