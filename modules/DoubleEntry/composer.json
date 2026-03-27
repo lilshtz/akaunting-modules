@@ -1,0 +1,11 @@
+{
+    "name": "akaunting/double-entry",
+    "description": "Double-entry accounting module for Akaunting",
+    "type": "akaunting-module",
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Modules\\DoubleEntry\\": ""
+        }
+    }
+}
