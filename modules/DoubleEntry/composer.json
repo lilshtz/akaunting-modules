@@ -1,0 +1,19 @@
+{
+    "name": "akaunting/double-entry",
+    "description": "Double-entry accounting module for Akaunting",
+    "keywords": ["akaunting", "double-entry", "accounting", "ledger"],
+    "license": "proprietary",
+    "authors": [],
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Modules\\DoubleEntry\\Providers\\Main"
+            ]
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\DoubleEntry\\": ""
+        }
+    }
+}
