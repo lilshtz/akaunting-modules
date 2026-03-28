@@ -2,16 +2,10 @@
 
 namespace Modules\BankFeeds\Providers;
 
-use Illuminate\Foundation\Support\Providers\EventServiceProvider;
+use Illuminate\Foundation\Support\Providers\EventServiceProvider as Provider;
 
-class Event extends EventServiceProvider
+class Event extends Provider
 {
-    protected $listen = [
-        'App\Events\Menu\AdminCreated' => [
-            'Modules\BankFeeds\Listeners\AddAdminMenu',
-        ],
-    ];
-
     public function shouldDiscoverEvents(): bool
     {
         return true;
@@ -19,6 +13,8 @@ class Event extends EventServiceProvider
 
     protected function discoverEventsWithin(): array
     {
-        return [__DIR__ . '/../Listeners'];
+        return [
+            __DIR__ . '/../Listeners',
+        ];
     }
 }

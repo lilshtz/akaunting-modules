@@ -3,41 +3,28 @@
 namespace Modules\BankFeeds\Http\Controllers;
 
 use App\Abstracts\Http\Controller;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Modules\BankFeeds\Models\BankFeedImport;
-use Modules\BankFeeds\Services\CsvImportService;
-use Modules\BankFeeds\Services\OfxImportService;
-use Modules\BankFeeds\Services\CategorizationService;
-use Modules\BankFeeds\Services\DuplicateDetector;
-use Modules\BankFeeds\Services\TransactionMatcher;
+use Modules\BankFeeds\Http\Requests\ImportUpload;
+use Modules\BankFeeds\Models\Import;
+use Modules\BankFeeds\Models\Transaction;
+use Modules\BankFeeds\Services\CsvParser;
+use Modules\DoubleEntry\Models\Account;
 
 class Imports extends Controller
 {
-    protected CsvImportService $csvService;
-    protected OfxImportService $ofxService;
-    protected CategorizationService $categorizationService;
-    protected DuplicateDetector $duplicateDetector;
-    protected TransactionMatcher $matcher;
-
-    public function __construct(
-        CsvImportService $csvService,
-        OfxImportService $ofxService,
-        CategorizationService $categorizationService,
-        DuplicateDetector $duplicateDetector,
-        TransactionMatcher $matcher
-    ) {
-        $this->csvService = $csvService;
-        $this->ofxService = $ofxService;
-        $this->categorizationService = $categorizationService;
-        $this->duplicateDetector = $duplicateDetector;
-        $this->matcher = $matcher;
+    public function __construct(protected CsvParser $parser)
+    {
     }
 
     public function index()
     {
-        $imports = BankFeedImport::where('company_id', company_id())
-            ->orderBy('created_at', 'desc')
+        $imports = Import::query()
+            ->byCompany()
+            ->with('bankAccount')
+            ->orderByDesc('created_at')
             ->paginate(25);
 
         return view('bank-feeds::imports.index', compact('imports'));
@@ -45,219 +32,154 @@ class Imports extends Controller
 
     public function create()
     {
-        return view('bank-feeds::imports.create');
+        $bankAccounts = Account::query()
+            ->byCompany()
+            ->where('type', 'asset')
+            ->where('enabled', true)
+            ->orderBy('code')
+            ->get()
+            ->mapWithKeys(fn (Account $account) => [$account->id => trim($account->code . ' - ' . $account->name)])
+            ->all();
+
+        return view('bank-feeds::imports.create', compact('bankAccounts'));
     }
 
-    /**
-     * Upload a file and redirect to column mapping (CSV) or process directly (OFX/QFX).
-     */
-    public function upload(Request $request)
+    public function upload(ImportUpload $request): RedirectResponse
     {
-        $request->validate([
-            'file' => 'required|file|max:10240',
-            'bank_account_id' => 'required|integer',
-        ]);
-
         $file = $request->file('file');
-        $extension = strtolower($file->getClientOriginalExtension());
+        $storedPath = $file->store('bank-feeds/' . company_id(), 'local');
 
-        if (!in_array($extension, ['csv', 'ofx', 'qfx'])) {
-            flash(trans('bank-feeds::general.messages.invalid_format'))->error();
-            return redirect()->back();
-        }
-
-        $companyId = company_id();
-        $path = $file->store('bank-feeds/' . $companyId, 'public');
-
-        $import = BankFeedImport::create([
-            'company_id' => $companyId,
-            'bank_account_id' => $request->get('bank_account_id'),
-            'filename' => $file->getClientOriginalName(),
-            'format' => $extension,
-            'status' => BankFeedImport::STATUS_PENDING,
+        $import = Import::create([
+            'company_id' => company_id(),
+            'bank_account_id' => $request->integer('bank_account_id') ?: null,
+            'filename' => $storedPath,
+            'original_filename' => $file->getClientOriginalName(),
+            'format' => 'csv',
+            'status' => 'pending',
         ]);
 
-        if ($extension === 'csv') {
-            // Show column mapping UI
-            $fullPath = Storage::disk('public')->path($path);
-            $preview = $this->csvService->preview($fullPath);
-
-            // Check for saved mapping
-            $savedMapping = $this->getSavedMapping($companyId, $request->get('bank_account_id'));
-
-            return view('bank-feeds::imports.map-columns', compact('import', 'preview', 'path', 'savedMapping'));
-        }
-
-        // OFX/QFX — process directly
-        return $this->processOfx($import, $path);
+        return redirect()->route('bank-feeds.imports.map', $import->id);
     }
 
-    /**
-     * Process CSV import with column mapping.
-     */
-    public function mapColumns(Request $request, int $id)
+    public function mapColumns(int $id)
     {
-        $import = BankFeedImport::where('company_id', company_id())->findOrFail($id);
+        $import = Import::query()->byCompany()->findOrFail($id);
 
-        $request->validate([
-            'path' => 'required|string',
-            'mapping.date' => 'required|integer|min:0',
-            'mapping.description' => 'required|integer|min:0',
-            'save_mapping' => 'nullable|boolean',
-        ]);
-
-        $mapping = $request->get('mapping');
-        $path = $request->get('path');
-
-        if (! str_starts_with($path, 'bank-feeds/' . company_id() . '/')) {
-            abort(403);
-        }
-
-        $fullPath = Storage::disk('public')->path($path);
-
-        if (! Storage::disk('public')->exists($path)) {
+        if (! Storage::disk('local')->exists($import->filename)) {
             abort(404);
         }
 
-        $import->update([
-            'status' => BankFeedImport::STATUS_PROCESSING,
-            'column_mapping' => $mapping,
-        ]);
+        $headers = $this->parser->parseHeaders(Storage::disk('local')->path($import->filename));
+        $savedMapping = [];
 
-        // Save mapping for reuse if requested
-        if ($request->get('save_mapping')) {
-            $this->saveMapping(company_id(), $import->bank_account_id, $mapping);
+        if ($import->bank_account_id) {
+            $savedMapping = Import::query()
+                ->byCompany()
+                ->where('bank_account_id', $import->bank_account_id)
+                ->whereNotNull('column_mapping')
+                ->where('id', '!=', $import->id)
+                ->latest('id')
+                ->value('column_mapping') ?? [];
+        }
+
+        return view('bank-feeds::imports.map-columns', compact('import', 'headers', 'savedMapping'));
+    }
+
+    public function process(Request $request, int $id): RedirectResponse
+    {
+        $import = Import::query()->byCompany()->findOrFail($id);
+        $mapping = $request->validate([
+            'mapping.date' => ['required', 'integer', 'min:0'],
+            'mapping.description' => ['required', 'integer', 'min:0'],
+            'mapping.type' => ['nullable', 'integer', 'min:0'],
+            'mapping.amount' => ['nullable', 'integer', 'min:0'],
+            'mapping.debit' => ['nullable', 'integer', 'min:0'],
+            'mapping.credit' => ['nullable', 'integer', 'min:0'],
+        ])['mapping'];
+
+        if (
+            (($mapping['amount'] ?? '') === '')
+            && (($mapping['debit'] ?? '') === '')
+            && (($mapping['credit'] ?? '') === '')
+        ) {
+            return back()->withErrors([
+                'mapping.amount' => trans('bank-feeds::general.messages.amount_mapping_required'),
+            ])->withInput();
         }
 
         try {
-            $rowCount = $this->csvService->import($import, $fullPath, $mapping);
+            $path = Storage::disk('local')->path($import->filename);
+            $rows = $this->parser->parseRows($path, $mapping);
 
             $import->update([
-                'status' => BankFeedImport::STATUS_COMPLETE,
-                'row_count' => $rowCount,
+                'status' => 'processing',
+                'column_mapping' => $mapping,
+                'error_message' => null,
+            ]);
+
+            DB::transaction(function () use ($import, $rows): void {
+                Transaction::query()
+                    ->byCompany()
+                    ->where('import_id', $import->id)
+                    ->delete();
+
+                foreach ($rows as $row) {
+                    $hash = hash('sha256', $row['date'] . '|' . $row['amount'] . '|' . $row['description']);
+
+                    $duplicateExists = Transaction::query()
+                        ->byCompany()
+                        ->where('duplicate_hash', $hash)
+                        ->exists();
+
+                    Transaction::create([
+                        'company_id' => company_id(),
+                        'import_id' => $import->id,
+                        'bank_account_id' => $import->bank_account_id,
+                        'date' => $row['date'],
+                        'description' => $row['description'],
+                        'amount' => $row['amount'],
+                        'type' => $row['type'],
+                        'raw_data_json' => $row['raw_data_json'],
+                        'status' => 'pending',
+                        'duplicate_hash' => $hash,
+                        'is_duplicate' => $duplicateExists,
+                    ]);
+                }
+            });
+
+            $import->update([
+                'row_count' => count($rows),
+                'status' => 'complete',
                 'imported_at' => now(),
             ]);
 
-            // Detect duplicates
-            $duplicates = $this->duplicateDetector->detectDuplicates($import->id);
+            flash(trans('bank-feeds::general.messages.import_success', ['count' => count($rows)]))->success();
 
-            // Auto-categorize
-            $categorized = $this->categorizationService->categorizeImport($import->id, company_id());
-
-            // Auto-match high-confidence transactions
-            $matched = $this->matcher->autoMatch(company_id());
-
-            // Clean up uploaded file
-            Storage::disk('public')->delete($path);
-
-            $message = trans('bank-feeds::general.messages.import_success', [
-                'count' => $rowCount,
-                'categorized' => $categorized,
-            ]);
-
-            if ($duplicates > 0) {
-                $message .= ' ' . trans('bank-feeds::general.messages.duplicates_found', ['count' => $duplicates]);
-            }
-
-            if ($matched > 0) {
-                $message .= ' ' . trans('bank-feeds::general.messages.auto_matched', ['count' => $matched]);
-            }
-
-            flash($message)->success();
-        } catch (\Exception $e) {
-            $import->update(['status' => BankFeedImport::STATUS_FAILED]);
-            Storage::disk('public')->delete($path);
-
-            flash(trans('bank-feeds::general.messages.import_failed', ['error' => $e->getMessage()]))->error();
-        }
-
-        return redirect()->route('bank-feeds.imports.index');
-    }
-
-    /**
-     * Process an OFX/QFX import.
-     */
-    protected function processOfx(BankFeedImport $import, string $path)
-    {
-        $fullPath = Storage::disk('public')->path($path);
-
-        $import->update(['status' => BankFeedImport::STATUS_PROCESSING]);
-
-        try {
-            $rowCount = $this->ofxService->import($import, $fullPath);
-
+            return redirect()->route('bank-feeds.transactions.index', ['import' => $import->id]);
+        } catch (\Throwable $e) {
             $import->update([
-                'status' => BankFeedImport::STATUS_COMPLETE,
-                'row_count' => $rowCount,
-                'imported_at' => now(),
+                'status' => 'failed',
+                'error_message' => $e->getMessage(),
             ]);
-
-            // Detect duplicates
-            $duplicates = $this->duplicateDetector->detectDuplicates($import->id);
-
-            // Auto-categorize
-            $categorized = $this->categorizationService->categorizeImport($import->id, company_id());
-
-            // Auto-match high-confidence transactions
-            $matched = $this->matcher->autoMatch(company_id());
-
-            Storage::disk('public')->delete($path);
-
-            $message = trans('bank-feeds::general.messages.import_success', [
-                'count' => $rowCount,
-                'categorized' => $categorized,
-            ]);
-
-            if ($duplicates > 0) {
-                $message .= ' ' . trans('bank-feeds::general.messages.duplicates_found', ['count' => $duplicates]);
-            }
-
-            if ($matched > 0) {
-                $message .= ' ' . trans('bank-feeds::general.messages.auto_matched', ['count' => $matched]);
-            }
-
-            flash($message)->success();
-        } catch (\Exception $e) {
-            $import->update(['status' => BankFeedImport::STATUS_FAILED]);
-            Storage::disk('public')->delete($path);
 
             flash(trans('bank-feeds::general.messages.import_failed', ['error' => $e->getMessage()]))->error();
-        }
 
-        return redirect()->route('bank-feeds.imports.index');
+            return redirect()->route('bank-feeds.imports.map', $import->id);
+        }
     }
 
-    public function destroy(int $id)
+    public function destroy(int $id): RedirectResponse
     {
-        $import = BankFeedImport::where('company_id', company_id())->findOrFail($id);
+        $import = Import::query()->byCompany()->findOrFail($id);
 
-        // Delete associated transactions
-        $import->transactions()->delete();
+        if ($import->filename && Storage::disk('local')->exists($import->filename)) {
+            Storage::disk('local')->delete($import->filename);
+        }
+
         $import->delete();
 
         flash(trans('messages.success.deleted', ['type' => trans('bank-feeds::general.import')]))->success();
 
         return redirect()->route('bank-feeds.imports.index');
-    }
-
-    /**
-     * Get saved column mapping for a bank account.
-     */
-    protected function getSavedMapping(int $companyId, int $bankAccountId): ?array
-    {
-        $key = "bank_feeds.mapping.{$companyId}.{$bankAccountId}";
-        $value = setting($key);
-
-        return $value ? json_decode($value, true) : null;
-    }
-
-    /**
-     * Save column mapping for a bank account.
-     */
-    protected function saveMapping(int $companyId, int $bankAccountId, array $mapping): void
-    {
-        $key = "bank_feeds.mapping.{$companyId}.{$bankAccountId}";
-        setting([$key => json_encode($mapping)]);
-        setting()->save();
     }
 }

@@ -2,9 +2,10 @@
 
 namespace Modules\BankFeeds\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\Abstracts\Http\FormRequest as Request;
+use Illuminate\Validation\Rule as ValidationRule;
 
-class RuleStore extends FormRequest
+class RuleStore extends Request
 {
     public function authorize(): bool
     {
@@ -14,11 +15,12 @@ class RuleStore extends FormRequest
     public function rules(): array
     {
         return [
-            'field' => 'required|in:description,vendor,amount',
-            'operator' => 'required|in:contains,equals,starts_with,gt,lt,between',
+            'name' => 'required|string|max:191',
+            'field' => ['required', ValidationRule::in(['description', 'amount', 'type'])],
+            'operator' => ['required', ValidationRule::in(['contains', 'equals', 'starts_with', 'gt', 'lt', 'between'])],
             'value' => 'required|string|max:255',
-            'category_id' => 'nullable|integer|exists:categories,id',
-            'vendor_id' => 'nullable|integer',
+            'value_end' => 'nullable|string|max:255',
+            'category_id' => 'nullable|integer',
             'enabled' => 'nullable|boolean',
             'priority' => 'nullable|integer|min:0',
         ];

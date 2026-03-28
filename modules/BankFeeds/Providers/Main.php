@@ -2,9 +2,9 @@
 
 namespace Modules\BankFeeds\Providers;
 
-use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\ServiceProvider as Provider;
 
-class Main extends ServiceProvider
+class Main extends Provider
 {
     public function boot(): void
     {
@@ -28,23 +28,24 @@ class Main extends ServiceProvider
         $this->loadTranslationsFrom(__DIR__ . '/../Resources/lang', 'bank-feeds');
     }
 
-    protected function loadMigrations(): void
-    {
-        $this->loadMigrationsFrom(__DIR__ . '/../Database/Migrations');
-    }
-
     protected function loadRoutes(): void
     {
         if (app()->routesAreCached()) {
             return;
         }
 
-        foreach (['admin.php', 'api.php'] as $route) {
+        foreach (['admin.php', 'portal.php'] as $route) {
             $path = __DIR__ . '/../Routes/' . $route;
+
             if (file_exists($path)) {
                 $this->loadRoutesFrom($path);
             }
         }
+    }
+
+    protected function loadMigrations(): void
+    {
+        $this->loadMigrationsFrom(__DIR__ . '/../Database/Migrations');
     }
 
     public function provides(): array

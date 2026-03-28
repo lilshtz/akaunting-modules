@@ -1,115 +1,103 @@
 @extends('layouts.admin')
 
-@section('title', trans('bank-feeds::general.transactions'))
-
-@section('new_button')
-    <form action="{{ route('bank-feeds.transactions.bulk-categorize') }}" method="POST" class="d-inline">
-        @csrf
-        <button type="submit" class="btn btn-info btn-sm">
-            <span class="fa fa-magic"></span> &nbsp;{{ trans('bank-feeds::general.bulk_categorize') }}
-        </button>
-    </form>
-    <a href="{{ route('bank-feeds.imports.create') }}" class="btn btn-success btn-sm ml-2">
-        <span class="fa fa-plus"></span> &nbsp;{{ trans('bank-feeds::general.import_file') }}
-    </a>
-@endsection
+@section('title', trans('bank-feeds::general.transaction_review'))
 
 @section('content')
-    <div class="card">
-        {{-- Filters --}}
-        <div class="card-header">
-            <form method="GET" action="{{ route('bank-feeds.transactions.index') }}" class="form-inline">
-                <div class="form-group mr-3">
-                    <label class="mr-2">{{ trans('bank-feeds::general.fields.status') }}</label>
-                    <select name="status" class="form-control form-control-sm" onchange="this.form.submit()">
-                        @foreach($statuses as $value => $label)
-                            <option value="{{ $value }}" {{ request('status') == $value ? 'selected' : '' }}>
-                                {{ $label }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+    <div class="space-y-6">
+        <div>
+            <h1 class="text-xl font-semibold text-gray-900">{{ trans('bank-feeds::general.transaction_review') }}</h1>
+        </div>
 
-                @if(request('import_id'))
-                    <input type="hidden" name="import_id" value="{{ request('import_id') }}">
-                    <span class="badge badge-primary mr-2">
-                        Import #{{ request('import_id') }}
-                        <a href="{{ route('bank-feeds.transactions.index') }}" class="text-white ml-1">&times;</a>
-                    </span>
-                @endif
+        <div class="rounded-xl bg-white p-6 shadow-sm">
+            <form method="GET" action="{{ route('bank-feeds.transactions.index') }}" class="grid gap-4 md:grid-cols-4">
+                <x-form.group.select
+                    name="status"
+                    label="{{ trans('bank-feeds::general.status') }}"
+                    :options="['' => '', 'pending' => trans('bank-feeds::general.statuses.pending'), 'categorized' => trans('bank-feeds::general.statuses.categorized'), 'matched' => trans('bank-feeds::general.statuses.matched'), 'ignored' => trans('bank-feeds::general.statuses.ignored')]"
+                    :value="request('status')"
+                    not-required
+                />
+                <x-form.group.select
+                    name="import"
+                    label="{{ trans('bank-feeds::general.import') }}"
+                    :options="$imports->pluck('original_filename', 'id')->prepend('', '')->all()"
+                    :value="request('import')"
+                    not-required
+                />
+                <x-form.group.date name="date_from" label="{{ trans('bank-feeds::general.date_from') }}" :value="request('date_from')" not-required />
+                <x-form.group.date name="date_to" label="{{ trans('bank-feeds::general.date_to') }}" :value="request('date_to')" not-required />
+
+                <div class="md:col-span-4 flex items-center justify-end gap-3">
+                    <a href="{{ route('bank-feeds.transactions.index') }}" class="inline-flex rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        {{ trans('general.reset') }}
+                    </a>
+                    <button type="submit" class="inline-flex rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-900">
+                        {{ trans('general.filter') }}
+                    </button>
+                </div>
             </form>
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-flush table-hover">
-                <thead class="thead-light">
-                    <tr>
-                        <th>{{ trans('bank-feeds::general.fields.date') }}</th>
-                        <th>{{ trans('bank-feeds::general.fields.description') }}</th>
-                        <th class="text-right">{{ trans('bank-feeds::general.fields.amount') }}</th>
-                        <th class="text-center">{{ trans('bank-feeds::general.fields.type') }}</th>
-                        <th>{{ trans('bank-feeds::general.fields.category') }}</th>
-                        <th class="text-center">{{ trans('bank-feeds::general.fields.status') }}</th>
-                        <th class="text-center">{{ trans('general.actions') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($transactions as $txn)
-                        <tr>
-                            <td>{{ $txn->date->format('M d, Y') }}</td>
-                            <td>{{ $txn->description }}</td>
-                            <td class="text-right {{ $txn->type === 'withdrawal' ? 'text-danger' : 'text-success' }}">
-                                {{ $txn->formatted_amount }}
-                            </td>
-                            <td class="text-center">
-                                <span class="badge badge-{{ $txn->type === 'deposit' ? 'success' : 'danger' }}">
-                                    {{ trans('bank-feeds::general.types.' . $txn->type) }}
-                                </span>
-                            </td>
-                            <td>
-                                @if($txn->category)
-                                    {{ $txn->category->name }}
-                                @else
-                                    <span class="text-muted">—</span>
-                                @endif
-                            </td>
-                            <td class="text-center">
-                                @php
-                                    $statusClass = match($txn->status) {
-                                        'categorized' => 'success',
-                                        'matched' => 'info',
-                                        'ignored' => 'secondary',
-                                        default => 'warning',
-                                    };
-                                @endphp
-                                <span class="badge badge-{{ $statusClass }}">
-                                    {{ trans('bank-feeds::general.statuses.' . $txn->status) }}
-                                </span>
-                            </td>
-                            <td class="text-center">
-                                @if($txn->status === 'pending')
-                                    <form action="{{ route('bank-feeds.transactions.ignore', $txn->id) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        <button type="submit" class="btn btn-sm btn-neutral" title="{{ trans('bank-feeds::general.ignore') }}">
-                                            <i class="fa fa-eye-slash"></i>
-                                        </button>
-                                    </form>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7" class="text-center">
-                                <p class="my-4">{{ trans('general.no_records') }}</p>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+        <form method="POST" action="{{ route('bank-feeds.transactions.bulk-ignore') }}" class="space-y-4">
+            @csrf
 
-        <div class="card-footer">
-            {{ $transactions->appends(request()->query())->links() }}
-        </div>
+            <div class="flex justify-end">
+                <button type="submit" class="inline-flex rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-900">
+                    {{ trans('bank-feeds::general.ignore_selected') }}
+                </button>
+            </div>
+
+            <div class="rounded-xl bg-white shadow-sm">
+                <x-table>
+                    <x-table.thead>
+                        <x-table.tr>
+                            <x-table.th><input type="checkbox" onclick="document.querySelectorAll('.transaction-checkbox').forEach((checkbox) => checkbox.checked = this.checked)"></x-table.th>
+                            <x-table.th>{{ trans('bank-feeds::general.date') }}</x-table.th>
+                            <x-table.th>{{ trans('bank-feeds::general.description') }}</x-table.th>
+                            <x-table.th>{{ trans('bank-feeds::general.amount') }}</x-table.th>
+                            <x-table.th>{{ trans('bank-feeds::general.type') }}</x-table.th>
+                            <x-table.th>{{ trans('bank-feeds::general.category') }}</x-table.th>
+                            <x-table.th>{{ trans('bank-feeds::general.status') }}</x-table.th>
+                            <x-table.th>{{ trans('general.actions') }}</x-table.th>
+                        </x-table.tr>
+                    </x-table.thead>
+                    <x-table.tbody>
+                        @forelse ($transactions as $transaction)
+                            <x-table.tr>
+                                <x-table.td><input class="transaction-checkbox" type="checkbox" name="transaction_ids[]" value="{{ $transaction->id }}"></x-table.td>
+                                <x-table.td>{{ $transaction->date?->format('Y-m-d') }}</x-table.td>
+                                <x-table.td>
+                                    {{ $transaction->description }}
+                                    @if ($transaction->is_duplicate)
+                                        <div class="mt-1 text-xs font-medium text-amber-600">{{ trans('bank-feeds::general.duplicate') }}</div>
+                                    @endif
+                                </x-table.td>
+                                <x-table.td>{{ number_format((float) $transaction->amount, 4) }}</x-table.td>
+                                <x-table.td>{{ trans('bank-feeds::general.types.' . $transaction->type) }}</x-table.td>
+                                <x-table.td>{{ $transaction->category?->name ?? '—' }}</x-table.td>
+                                <x-table.td>{{ trans('bank-feeds::general.statuses.' . $transaction->status) }}</x-table.td>
+                                <x-table.td>
+                                    @if ($transaction->status !== 'ignored')
+                                        <form method="POST" action="{{ route('bank-feeds.transactions.ignore', $transaction->id) }}">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="text-sm font-medium text-red-600 hover:text-red-800">{{ trans('bank-feeds::general.ignore') }}</button>
+                                        </form>
+                                    @endif
+                                </x-table.td>
+                            </x-table.tr>
+                        @empty
+                            <x-table.tr>
+                                <x-table.td colspan="8" class="py-6 text-center text-sm text-gray-500">
+                                    {{ trans('bank-feeds::general.transactions_empty') }}
+                                </x-table.td>
+                            </x-table.tr>
+                        @endforelse
+                    </x-table.tbody>
+                </x-table>
+            </div>
+        </form>
+
+        {{ $transactions->links() }}
     </div>
 @endsection

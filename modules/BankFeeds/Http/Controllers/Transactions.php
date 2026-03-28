@@ -3,74 +3,72 @@
 namespace Modules\BankFeeds\Http\Controllers;
 
 use App\Abstracts\Http\Controller;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Modules\BankFeeds\Models\BankFeedTransaction;
-use Modules\BankFeeds\Models\BankFeedImport;
-use Modules\BankFeeds\Services\CategorizationService;
+use Modules\BankFeeds\Models\Import;
+use Modules\BankFeeds\Models\Transaction;
 
 class Transactions extends Controller
 {
-    protected CategorizationService $categorizationService;
-
-    public function __construct(CategorizationService $categorizationService)
-    {
-        $this->categorizationService = $categorizationService;
-    }
-
     public function index(Request $request)
     {
-        $query = BankFeedTransaction::whereHas('import', function ($q) {
-            $q->where('company_id', company_id());
-        });
+        $query = Transaction::query()
+            ->byCompany()
+            ->with(['category', 'import'])
+            ->orderByDesc('date')
+            ->orderByDesc('id');
 
-        if ($request->has('import_id')) {
-            $query->where('import_id', $request->get('import_id'));
-        }
-
-        if ($request->has('status')) {
+        if ($request->filled('status')) {
             $query->where('status', $request->get('status'));
         }
 
-        if ($request->has('bank_account_id')) {
-            $query->where('bank_account_id', $request->get('bank_account_id'));
+        if ($request->filled('import')) {
+            $query->where('import_id', $request->integer('import'));
         }
 
-        $transactions = $query->with(['category', 'import'])
-            ->orderBy('date', 'desc')
-            ->paginate(50);
+        if ($request->filled('date_from')) {
+            $query->whereDate('date', '>=', $request->get('date_from'));
+        }
 
-        $statuses = [
-            '' => trans('general.all'),
-            BankFeedTransaction::STATUS_PENDING => trans('bank-feeds::general.statuses.pending'),
-            BankFeedTransaction::STATUS_CATEGORIZED => trans('bank-feeds::general.statuses.categorized'),
-            BankFeedTransaction::STATUS_MATCHED => trans('bank-feeds::general.statuses.matched'),
-            BankFeedTransaction::STATUS_IGNORED => trans('bank-feeds::general.statuses.ignored'),
-        ];
+        if ($request->filled('date_to')) {
+            $query->whereDate('date', '<=', $request->get('date_to'));
+        }
 
-        return view('bank-feeds::transactions.index', compact('transactions', 'statuses'));
+        $transactions = $query->paginate(25)->withQueryString();
+        $imports = Import::query()->byCompany()->orderByDesc('id')->get();
+
+        return view('bank-feeds::transactions.index', compact('transactions', 'imports'));
     }
 
-    public function ignore(int $id)
+    public function ignore(int $id): RedirectResponse
     {
-        $transaction = BankFeedTransaction::whereHas('import', function ($q) {
-            $q->where('company_id', company_id());
-        })->findOrFail($id);
-
-        $transaction->update(['status' => BankFeedTransaction::STATUS_IGNORED]);
+        $transaction = Transaction::query()->byCompany()->findOrFail($id);
+        $transaction->update(['status' => 'ignored']);
 
         flash(trans('bank-feeds::general.messages.transaction_ignored'))->success();
 
-        return redirect()->back();
+        return redirect()->route('bank-feeds.transactions.index');
     }
 
-    /**
-     * Bulk re-categorize all pending transactions.
-     */
-    public function bulkCategorize()
+    public function bulkIgnore(Request $request): RedirectResponse
     {
-        $categorized = $this->categorizationService->bulkCategorize(company_id());
+        $ids = collect($request->input('transaction_ids', []))
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->values();
 
-        flash(trans('bank-feeds::general.messages.bulk_categorized', ['count' => $categorized]))->success();
+        if ($ids->isEmpty()) {
+            flash(trans('bank-feeds::general.messages.no_transactions_selected'))->warning();
+
+            return redirect()->route('bank-feeds.transactions.index');
+        }
+
+        $count = Transaction::query()
+            ->byCompany()
+            ->whereIn('id', $ids)
+            ->update(['status' => 'ignored']);
+
+        flash(trans('bank-feeds::general.messages.bulk_ignored', ['count' => $count]))->success();
 
         return redirect()->route('bank-feeds.transactions.index');
     }

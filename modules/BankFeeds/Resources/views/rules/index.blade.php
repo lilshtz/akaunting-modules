@@ -1,90 +1,70 @@
 @extends('layouts.admin')
 
-@section('title', trans('bank-feeds::general.rules'))
-
-@section('new_button')
-    <a href="{{ route('bank-feeds.rules.create') }}" class="btn btn-success btn-sm">
-        <span class="fa fa-plus"></span> &nbsp;{{ trans('general.add_new', ['type' => trans('bank-feeds::general.rule')]) }}
-    </a>
-@endsection
+@section('title', trans('bank-feeds::general.categorization_rules'))
 
 @section('content')
-    <div class="card">
-        <div class="card-header">
-            <h3 class="mb-0">{{ trans('bank-feeds::general.rules') }}</h3>
-            <p class="text-muted mb-0">{{ trans('bank-feeds::general.help.rules') }}</p>
+    <div class="space-y-6">
+        <div class="flex items-center justify-between gap-3">
+            <div>
+                <h1 class="text-xl font-semibold text-gray-900">{{ trans('bank-feeds::general.categorization_rules') }}</h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <form method="POST" action="{{ route('bank-feeds.rules.apply') }}">
+                    @csrf
+                    <button type="submit" class="inline-flex rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        {{ trans('bank-feeds::general.apply_rules') }}
+                    </button>
+                </form>
+                <a href="{{ route('bank-feeds.rules.create') }}" class="inline-flex rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
+                    {{ trans('general.title.new', ['type' => trans('bank-feeds::general.rule')]) }}
+                </a>
+            </div>
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-flush table-hover" id="rules-table">
-                <thead class="thead-light">
-                    <tr>
-                        <th class="text-center" style="width: 60px;">{{ trans('bank-feeds::general.fields.priority') }}</th>
-                        <th>{{ trans('bank-feeds::general.fields.field') }}</th>
-                        <th>{{ trans('bank-feeds::general.fields.operator') }}</th>
-                        <th>{{ trans('bank-feeds::general.fields.value') }}</th>
-                        <th>{{ trans('bank-feeds::general.fields.category') }}</th>
-                        <th class="text-center">{{ trans('bank-feeds::general.fields.enabled') }}</th>
-                        <th class="text-center">{{ trans('general.actions') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($rules as $rule)
-                        <tr data-id="{{ $rule->id }}">
-                            <td class="text-center">
-                                <span class="badge badge-primary">{{ $rule->priority }}</span>
-                            </td>
-                            <td>{{ trans('bank-feeds::general.rule_fields.' . $rule->field) }}</td>
-                            <td>{{ trans('bank-feeds::general.operators.' . $rule->operator) }}</td>
-                            <td><code>{{ $rule->value }}</code></td>
-                            <td>
-                                @if($rule->category)
-                                    {{ $rule->category->name }}
-                                @else
-                                    <span class="text-muted">—</span>
-                                @endif
-                            </td>
-                            <td class="text-center">
-                                @if($rule->enabled)
-                                    <span class="badge badge-success">{{ trans('general.yes') }}</span>
-                                @else
-                                    <span class="badge badge-secondary">{{ trans('general.no') }}</span>
-                                @endif
-                            </td>
-                            <td class="text-center">
-                                <div class="dropdown">
-                                    <a class="btn btn-neutral btn-sm" href="#" role="button" data-toggle="dropdown">
-                                        <i class="fa fa-ellipsis-h"></i>
-                                    </a>
-                                    <div class="dropdown-menu dropdown-menu-right">
-                                        <a class="dropdown-item" href="{{ route('bank-feeds.rules.edit', $rule->id) }}">
-                                            <i class="fa fa-edit"></i> {{ trans('general.edit') }}
-                                        </a>
-                                        <div class="dropdown-divider"></div>
-                                        <form action="{{ route('bank-feeds.rules.destroy', $rule->id) }}" method="POST">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="dropdown-item text-danger" onclick="return confirm('{{ trans('general.delete_confirm') }}')">
-                                                <i class="fa fa-trash"></i> {{ trans('general.delete') }}
-                                            </button>
-                                        </form>
-                                    </div>
+        <div class="rounded-xl bg-white shadow-sm">
+            <x-table>
+                <x-table.thead>
+                    <x-table.tr>
+                        <x-table.th>{{ trans('general.name') }}</x-table.th>
+                        <x-table.th>{{ trans('bank-feeds::general.field') }}</x-table.th>
+                        <x-table.th>{{ trans('bank-feeds::general.operator') }}</x-table.th>
+                        <x-table.th>{{ trans('bank-feeds::general.value') }}</x-table.th>
+                        <x-table.th>{{ trans('bank-feeds::general.category') }}</x-table.th>
+                        <x-table.th>{{ trans('bank-feeds::general.priority') }}</x-table.th>
+                        <x-table.th>{{ trans('general.enabled') }}</x-table.th>
+                        <x-table.th>{{ trans('general.actions') }}</x-table.th>
+                    </x-table.tr>
+                </x-table.thead>
+                <x-table.tbody>
+                    @forelse ($rules as $rule)
+                        <x-table.tr>
+                            <x-table.td>{{ $rule->name }}</x-table.td>
+                            <x-table.td>{{ trans('bank-feeds::general.rule_fields.' . $rule->field) }}</x-table.td>
+                            <x-table.td>{{ trans('bank-feeds::general.operators.' . $rule->operator) }}</x-table.td>
+                            <x-table.td>{{ $rule->value }}{{ $rule->value_end ? ' / ' . $rule->value_end : '' }}</x-table.td>
+                            <x-table.td>{{ $rule->category?->name ?? '—' }}</x-table.td>
+                            <x-table.td>{{ $rule->priority }}</x-table.td>
+                            <x-table.td>{{ $rule->enabled ? trans('bank-feeds::general.enabled_label') : trans('bank-feeds::general.disabled_label') }}</x-table.td>
+                            <x-table.td>
+                                <div class="flex items-center gap-3">
+                                    <a href="{{ route('bank-feeds.rules.edit', $rule->id) }}" class="text-sm font-medium text-blue-600 hover:text-blue-800">{{ trans('general.edit') }}</a>
+                                    <form method="POST" action="{{ route('bank-feeds.rules.destroy', $rule->id) }}" onsubmit="return confirm('{{ trans('messages.warning.confirm.delete') }}');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-sm font-medium text-red-600 hover:text-red-800">{{ trans('general.delete') }}</button>
+                                    </form>
                                 </div>
-                            </td>
-                        </tr>
+                            </x-table.td>
+                        </x-table.tr>
                     @empty
-                        <tr>
-                            <td colspan="7" class="text-center">
-                                <p class="my-4">{{ trans('general.no_records') }}</p>
-                            </td>
-                        </tr>
+                        <x-table.tr>
+                            <x-table.td colspan="8" class="py-6 text-center text-sm text-gray-500">{{ trans('bank-feeds::general.rules_empty') }}</x-table.td>
+                        </x-table.tr>
                     @endforelse
-                </tbody>
-            </table>
+                </x-table.tbody>
+            </x-table>
         </div>
 
-        <div class="card-footer">
-            {{ $rules->links() }}
-        </div>
+        {{ $rules->links() }}
     </div>
 @endsection

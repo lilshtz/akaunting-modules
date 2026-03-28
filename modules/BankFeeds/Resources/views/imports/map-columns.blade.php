@@ -3,191 +3,55 @@
 @section('title', trans('bank-feeds::general.map_columns'))
 
 @section('content')
-    <div class="card">
-        <form action="{{ route('bank-feeds.imports.map-columns', $import->id) }}" method="POST">
-            @csrf
+    @php
+        $columnOptions = ['' => ''];
+        foreach ($headers as $index => $header) {
+            $columnOptions[$index] = $header;
+        }
+    @endphp
 
-            <input type="hidden" name="path" value="{{ $path }}">
+    <div class="space-y-6">
+        <div>
+            <h1 class="text-xl font-semibold text-gray-900">{{ trans('bank-feeds::general.map_columns') }}</h1>
+            <p class="mt-1 text-sm text-gray-500">{{ trans('bank-feeds::general.help.column_mapping') }}</p>
+        </div>
 
-            <div class="card-header">
-                <h3 class="mb-0">{{ trans('bank-feeds::general.map_columns') }} — {{ $import->filename }}</h3>
-            </div>
+        <div class="rounded-xl bg-white p-6 shadow-sm">
+            <form method="POST" action="{{ route('bank-feeds.imports.process', $import->id) }}" class="space-y-6">
+                @csrf
 
-            <div class="card-body">
-                <p class="text-muted">{{ trans('bank-feeds::general.help.column_mapping') }}</p>
+                <div class="grid gap-6 md:grid-cols-2">
+                    <x-form.group.select name="mapping.date" label="{{ trans('bank-feeds::general.date') }}" :options="$columnOptions" :value="old('mapping.date', $savedMapping['date'] ?? '')" />
+                    <x-form.group.select name="mapping.description" label="{{ trans('bank-feeds::general.description') }}" :options="$columnOptions" :value="old('mapping.description', $savedMapping['description'] ?? '')" />
+                    <x-form.group.select name="mapping.amount" label="{{ trans('bank-feeds::general.amount') }}" :options="$columnOptions" :value="old('mapping.amount', $savedMapping['amount'] ?? '')" not-required />
+                    <x-form.group.select name="mapping.type" label="{{ trans('bank-feeds::general.type') }}" :options="$columnOptions" :value="old('mapping.type', $savedMapping['type'] ?? '')" not-required />
+                    <x-form.group.select name="mapping.debit" label="{{ trans('bank-feeds::general.fields.debit') }}" :options="$columnOptions" :value="old('mapping.debit', $savedMapping['debit'] ?? '')" not-required />
+                    <x-form.group.select name="mapping.credit" label="{{ trans('bank-feeds::general.fields.credit') }}" :options="$columnOptions" :value="old('mapping.credit', $savedMapping['credit'] ?? '')" not-required />
+                </div>
 
-                {{-- Preset selector --}}
-                <div class="row mb-4">
-                    <div class="col-md-4">
-                        <label>Bank Preset (optional)</label>
-                        <select id="preset-select" class="form-control">
-                            <option value="">-- Select a preset --</option>
-                            @foreach(\Modules\BankFeeds\Services\CsvImportService::PRESETS as $key => $preset)
-                                <option value="{{ $key }}"
-                                    data-date="{{ $preset['date'] }}"
-                                    data-description="{{ $preset['description'] }}"
-                                    data-amount="{{ $preset['amount'] ?? '' }}"
-                                    data-type="{{ $preset['type'] ?? '' }}"
-                                    data-credit="{{ $preset['credit'] ?? '' }}"
-                                    data-debit="{{ $preset['debit'] ?? '' }}">
-                                    {{ $preset['label'] }}
-                                </option>
-                            @endforeach
-                        </select>
+                <div class="rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900">
+                    <p>{{ trans('bank-feeds::general.amount_mapping_help') }}</p>
+                    <p class="mt-1">{{ trans('bank-feeds::general.type_optional_help') }}</p>
+                </div>
+
+                <div class="rounded-lg border border-gray-200 p-4">
+                    <h2 class="text-sm font-semibold text-gray-900">{{ trans('bank-feeds::general.sample_headers') }}</h2>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        @foreach ($headers as $header)
+                            <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">{{ $header }}</span>
+                        @endforeach
                     </div>
                 </div>
 
-                {{-- Column mapping --}}
-                <div class="row">
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="mapping_date">{{ trans('bank-feeds::general.fields.date') }} <span class="text-danger">*</span></label>
-                            <select name="mapping[date]" id="mapping_date" class="form-control" required>
-                                <option value="">-- Select --</option>
-                                @foreach($preview['headers'] as $i => $header)
-                                    <option value="{{ $i }}" {{ ($savedMapping['date'] ?? '') == $i ? 'selected' : '' }}>
-                                        {{ $i }}: {{ $header }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="mapping_description">{{ trans('bank-feeds::general.fields.description') }} <span class="text-danger">*</span></label>
-                            <select name="mapping[description]" id="mapping_description" class="form-control" required>
-                                <option value="">-- Select --</option>
-                                @foreach($preview['headers'] as $i => $header)
-                                    <option value="{{ $i }}" {{ ($savedMapping['description'] ?? '') == $i ? 'selected' : '' }}>
-                                        {{ $i }}: {{ $header }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="mapping_amount">{{ trans('bank-feeds::general.fields.amount') }}</label>
-                            <select name="mapping[amount]" id="mapping_amount" class="form-control">
-                                <option value="">-- Select --</option>
-                                @foreach($preview['headers'] as $i => $header)
-                                    <option value="{{ $i }}" {{ ($savedMapping['amount'] ?? '') == $i ? 'selected' : '' }}>
-                                        {{ $i }}: {{ $header }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="mapping_type">{{ trans('bank-feeds::general.fields.type') }}</label>
-                            <select name="mapping[type]" id="mapping_type" class="form-control">
-                                <option value="">-- Not applicable --</option>
-                                @foreach($preview['headers'] as $i => $header)
-                                    <option value="{{ $i }}" {{ ($savedMapping['type'] ?? '') == $i ? 'selected' : '' }}>
-                                        {{ $i }}: {{ $header }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
+                <div class="flex items-center justify-end gap-3">
+                    <a href="{{ route('bank-feeds.imports.create') }}" class="inline-flex rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        {{ trans('general.cancel') }}
+                    </a>
+                    <button type="submit" class="inline-flex rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
+                        {{ trans('bank-feeds::general.process_import') }}
+                    </button>
                 </div>
-
-                <div class="row">
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="mapping_credit">{{ trans('bank-feeds::general.fields.credit') }}</label>
-                            <select name="mapping[credit]" id="mapping_credit" class="form-control">
-                                <option value="">-- Not applicable --</option>
-                                @foreach($preview['headers'] as $i => $header)
-                                    <option value="{{ $i }}" {{ ($savedMapping['credit'] ?? '') == $i ? 'selected' : '' }}>
-                                        {{ $i }}: {{ $header }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="mapping_debit">{{ trans('bank-feeds::general.fields.debit') }}</label>
-                            <select name="mapping[debit]" id="mapping_debit" class="form-control">
-                                <option value="">-- Not applicable --</option>
-                                @foreach($preview['headers'] as $i => $header)
-                                    <option value="{{ $i }}" {{ ($savedMapping['debit'] ?? '') == $i ? 'selected' : '' }}>
-                                        {{ $i }}: {{ $header }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="form-group mt-4">
-                            <div class="custom-control custom-checkbox">
-                                <input type="checkbox" name="save_mapping" value="1" class="custom-control-input" id="save_mapping" checked>
-                                <label class="custom-control-label" for="save_mapping">
-                                    {{ trans('bank-feeds::general.save_mapping') }}
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Preview table --}}
-                <h4 class="mt-4 mb-3">Preview (first {{ count($preview['rows']) }} rows)</h4>
-                <div class="table-responsive">
-                    <table class="table table-bordered table-sm">
-                        <thead class="thead-light">
-                            <tr>
-                                @foreach($preview['headers'] as $i => $header)
-                                    <th>
-                                        <small class="text-muted">Col {{ $i }}</small><br>
-                                        {{ $header }}
-                                    </th>
-                                @endforeach
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($preview['rows'] as $row)
-                                <tr>
-                                    @foreach($row as $cell)
-                                        <td>{{ $cell }}</td>
-                                    @endforeach
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="card-footer text-right">
-                <a href="{{ route('bank-feeds.imports.create') }}" class="btn btn-secondary">{{ trans('general.cancel') }}</a>
-                <button type="submit" class="btn btn-success">
-                    <span class="fa fa-check"></span> &nbsp;Import Transactions
-                </button>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
-
-    @push('scripts_start')
-        <script>
-            document.getElementById('preset-select').addEventListener('change', function() {
-                var option = this.options[this.selectedIndex];
-                if (!option.value) return;
-
-                var fields = ['date', 'description', 'amount', 'type', 'credit', 'debit'];
-                fields.forEach(function(field) {
-                    var val = option.dataset[field];
-                    var select = document.getElementById('mapping_' + field);
-                    if (select && val !== '' && val !== undefined) {
-                        select.value = val;
-                    }
-                });
-            });
-        </script>
-    @endpush
 @endsection

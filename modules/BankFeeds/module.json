@@ -9,11 +9,9 @@
     ],
     "aliases": {},
     "files": [],
-    "requires": [],
+    "requires": ["double-entry"],
     "reports": [],
-    "widgets": [
-        "Modules\\BankFeeds\\Widgets\\BankFeedSummary"
-    ],
+    "widgets": [],
     "settings": [],
     "extra-modules": {},
     "routes": {}

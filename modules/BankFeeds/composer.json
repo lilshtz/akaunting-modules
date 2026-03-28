@@ -1,6 +1,6 @@
 {
     "name": "akaunting/bank-feeds",
-    "description": "Bank Feeds module with CSV/OFX import and categorization rules for Akaunting",
+    "description": "Bank feeds scaffold with CSV import for Akaunting",
     "type": "akaunting-module",
     "require": {},
     "autoload": {

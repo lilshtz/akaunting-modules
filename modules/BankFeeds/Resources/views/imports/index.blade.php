@@ -2,88 +2,65 @@
 
 @section('title', trans('bank-feeds::general.import_history'))
 
-@section('new_button')
-    <a href="{{ route('bank-feeds.imports.create') }}" class="btn btn-success btn-sm">
-        <span class="fa fa-plus"></span> &nbsp;{{ trans('bank-feeds::general.import_file') }}
-    </a>
-@endsection
-
 @section('content')
-    <div class="card">
-        <div class="card-header">
-            <h3 class="mb-0">{{ trans('bank-feeds::general.import_history') }}</h3>
+    <div class="space-y-6">
+        <div class="flex items-center justify-between gap-3">
+            <div>
+                <h1 class="text-xl font-semibold text-gray-900">{{ trans('bank-feeds::general.import_history') }}</h1>
+            </div>
+            <a href="{{ route('bank-feeds.imports.create') }}" class="inline-flex rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
+                {{ trans('bank-feeds::general.import_transactions') }}
+            </a>
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-flush table-hover">
-                <thead class="thead-light">
-                    <tr>
-                        <th>{{ trans('bank-feeds::general.fields.filename') }}</th>
-                        <th>{{ trans('bank-feeds::general.fields.format') }}</th>
-                        <th>{{ trans('bank-feeds::general.fields.bank_account') }}</th>
-                        <th class="text-center">{{ trans('bank-feeds::general.fields.row_count') }}</th>
-                        <th class="text-center">{{ trans('bank-feeds::general.fields.status') }}</th>
-                        <th>{{ trans('bank-feeds::general.fields.imported_at') }}</th>
-                        <th class="text-center">{{ trans('general.actions') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($imports as $import)
-                        <tr>
-                            <td>{{ $import->filename }}</td>
-                            <td>
-                                <span class="badge badge-info">{{ strtoupper($import->format) }}</span>
-                            </td>
-                            <td>{{ $import->bank_account_id }}</td>
-                            <td class="text-center">{{ $import->row_count }}</td>
-                            <td class="text-center">
-                                @php
-                                    $statusClass = match($import->status) {
-                                        'complete' => 'success',
-                                        'failed' => 'danger',
-                                        'processing' => 'warning',
-                                        default => 'secondary',
-                                    };
-                                @endphp
-                                <span class="badge badge-{{ $statusClass }}">
-                                    {{ trans('bank-feeds::general.statuses.' . $import->status) }}
-                                </span>
-                            </td>
-                            <td>{{ $import->imported_at ? $import->imported_at->format('M d, Y H:i') : '-' }}</td>
-                            <td class="text-center">
-                                <div class="dropdown">
-                                    <a class="btn btn-neutral btn-sm" href="#" role="button" data-toggle="dropdown">
-                                        <i class="fa fa-ellipsis-h"></i>
-                                    </a>
-                                    <div class="dropdown-menu dropdown-menu-right">
-                                        <a class="dropdown-item" href="{{ route('bank-feeds.transactions.index', ['import_id' => $import->id]) }}">
-                                            <i class="fa fa-list"></i> {{ trans('bank-feeds::general.view_transactions') }}
+        <div class="rounded-xl bg-white shadow-sm">
+            <x-table>
+                <x-table.thead>
+                    <x-table.tr>
+                        <x-table.th>{{ trans('general.date') }}</x-table.th>
+                        <x-table.th>{{ trans('bank-feeds::general.original_filename') }}</x-table.th>
+                        <x-table.th>{{ trans('bank-feeds::general.format') }}</x-table.th>
+                        <x-table.th>{{ trans('bank-feeds::general.rows') }}</x-table.th>
+                        <x-table.th>{{ trans('bank-feeds::general.status') }}</x-table.th>
+                        <x-table.th>{{ trans('general.actions') }}</x-table.th>
+                    </x-table.tr>
+                </x-table.thead>
+                <x-table.tbody>
+                    @forelse ($imports as $import)
+                        <x-table.tr>
+                            <x-table.td>{{ $import->created_at?->format('Y-m-d H:i') }}</x-table.td>
+                            <x-table.td>{{ $import->original_filename }}</x-table.td>
+                            <x-table.td>{{ strtoupper($import->format) }}</x-table.td>
+                            <x-table.td>{{ $import->row_count }}</x-table.td>
+                            <x-table.td>{{ trans('bank-feeds::general.statuses.' . $import->status) }}</x-table.td>
+                            <x-table.td>
+                                <div class="flex items-center gap-3">
+                                    @if ($import->status === 'pending')
+                                        <a href="{{ route('bank-feeds.imports.map', $import->id) }}" class="text-sm font-medium text-blue-600 hover:text-blue-800">
+                                            {{ trans('bank-feeds::general.map_columns') }}
                                         </a>
-                                        <div class="dropdown-divider"></div>
-                                        <form action="{{ route('bank-feeds.imports.destroy', $import->id) }}" method="POST">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="dropdown-item text-danger" onclick="return confirm('{{ trans('general.delete_confirm') }}')">
-                                                <i class="fa fa-trash"></i> {{ trans('general.delete') }}
-                                            </button>
-                                        </form>
-                                    </div>
+                                    @endif
+                                    <form method="POST" action="{{ route('bank-feeds.imports.destroy', $import->id) }}" onsubmit="return confirm('{{ trans('messages.warning.confirm.delete') }}');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-sm font-medium text-red-600 hover:text-red-800">
+                                            {{ trans('general.delete') }}
+                                        </button>
+                                    </form>
                                 </div>
-                            </td>
-                        </tr>
+                            </x-table.td>
+                        </x-table.tr>
                     @empty
-                        <tr>
-                            <td colspan="7" class="text-center">
-                                <p class="my-4">{{ trans('general.no_records') }}</p>
-                            </td>
-                        </tr>
+                        <x-table.tr>
+                            <x-table.td colspan="6" class="py-6 text-center text-sm text-gray-500">
+                                {{ trans('bank-feeds::general.imports_empty') }}
+                            </x-table.td>
+                        </x-table.tr>
                     @endforelse
-                </tbody>
-            </table>
+                </x-table.tbody>
+            </x-table>
         </div>
 
-        <div class="card-footer">
-            {{ $imports->links() }}
-        </div>
+        {{ $imports->links() }}
     </div>
 @endsection
