@@ -21,6 +21,8 @@ class FinishInstallation
             'bank-feeds-imports' => 'c,r,u,d',
             'bank-feeds-transactions' => 'c,r,u,d',
             'bank-feeds-rules' => 'c,r,u,d',
+            'bank-feeds-matching' => 'c,r,u,d',
+            'bank-feeds-reconciliation' => 'c,r,u,d',
         ]);
     }
 }

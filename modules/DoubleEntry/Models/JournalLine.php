@@ -2,10 +2,10 @@
 
 namespace Modules\DoubleEntry\Models;
 
-use App\Abstracts\Model;
+use Illuminate\Database\Eloquent\Model as Eloquent;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class JournalLine extends Model
+class JournalLine extends Eloquent
 {
     public $timestamps = false;
 
@@ -23,8 +23,6 @@ class JournalLine extends Model
         'debit' => 'decimal:4',
         'credit' => 'decimal:4',
     ];
-
-    protected $tenantable = false;
 
     public function journal(): BelongsTo
     {

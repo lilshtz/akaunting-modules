@@ -17,10 +17,16 @@ class AddAdminMenu
             $sub->route('bank-feeds.transactions.index', trans('bank-feeds::general.transaction_review'), [], 20, [
                 'icon' => 'fact_check',
             ]);
-            $sub->route('bank-feeds.rules.index', trans('bank-feeds::general.categorization_rules'), [], 30, [
+            $sub->route('bank-feeds.matching.index', trans('bank-feeds::general.transaction_matching'), [], 30, [
+                'icon' => 'compare_arrows',
+            ]);
+            $sub->route('bank-feeds.reconciliation.index', trans('bank-feeds::general.reconciliation'), [], 40, [
+                'icon' => 'checklist',
+            ]);
+            $sub->route('bank-feeds.rules.index', trans('bank-feeds::general.categorization_rules'), [], 50, [
                 'icon' => 'rule',
             ]);
-            $sub->route('bank-feeds.imports.index', trans('bank-feeds::general.import_history'), [], 40, [
+            $sub->route('bank-feeds.imports.index', trans('bank-feeds::general.import_history'), [], 60, [
                 'icon' => 'history',
             ]);
         }, 40, [
