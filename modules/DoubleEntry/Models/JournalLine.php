@@ -20,8 +20,8 @@ class JournalLine extends Model
     ];
 
     protected $casts = [
-        'debit' => 'double',
-        'credit' => 'double',
+        'debit' => 'decimal:4',
+        'credit' => 'decimal:4',
     ];
 
     protected $tenantable = false;
@@ -33,6 +33,6 @@ class JournalLine extends Model
 
     public function account(): BelongsTo
     {
-        return $this->belongsTo(Account::class, 'account_id');
+        return $this->belongsTo(Account::class, 'account_id')->withTrashed();
     }
 }

@@ -7,6 +7,8 @@ Route::admin('double-entry', function () {
     Route::post('accounts/import', 'Accounts@importProcess')->name('accounts.import.process');
     Route::patch('accounts/{account}/toggle', 'Accounts@toggle')->name('accounts.toggle');
     Route::resource('accounts', 'Accounts')->except('show');
+    Route::post('journals/{journal}/post', 'Journals@post')->name('journals.post');
+    Route::post('journals/{journal}/unpost', 'Journals@unpost')->name('journals.unpost');
     Route::resource('journals', 'Journals');
     Route::get('general-ledger', 'GeneralLedger@index')->name('general-ledger.index');
     Route::get('trial-balance', 'TrialBalance@index')->name('trial-balance.index');
