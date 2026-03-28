@@ -21,6 +21,7 @@ return new class extends Migration
             $table->text('error_message')->nullable();
             $table->timestamp('imported_at')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::create('bank_feed_rules', function (Blueprint $table): void {
@@ -35,6 +36,7 @@ return new class extends Migration
             $table->boolean('enabled')->default(true);
             $table->unsignedInteger('priority')->default(0);
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::create('bank_feed_transactions', function (Blueprint $table): void {
@@ -53,6 +55,7 @@ return new class extends Migration
             $table->string('duplicate_hash', 64)->nullable()->index();
             $table->boolean('is_duplicate')->default(false);
             $table->timestamps();
+            $table->softDeletes();
 
             $table->foreign('import_id')->references('id')->on('bank_feed_imports')->cascadeOnDelete();
         });

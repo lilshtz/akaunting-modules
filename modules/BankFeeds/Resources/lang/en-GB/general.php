@@ -5,6 +5,7 @@ return [
     'import' => 'Import',
     'imports' => 'Imports',
     'import_transactions' => 'Import Transactions',
+    'upload_statement' => 'Upload Statement',
     'import_history' => 'Import History',
     'transaction_review' => 'Transaction Review',
     'transactions' => 'Transactions',
@@ -13,7 +14,7 @@ return [
     'rule' => 'Rule',
     'column_mapping' => 'Column Mapping',
     'map_columns' => 'Map Columns',
-    'upload_csv' => 'Upload CSV',
+    'upload_csv' => 'Upload File',
     'process_import' => 'Import',
     'apply_rules' => 'Apply Rules',
     'ignore' => 'Ignore',
@@ -56,6 +57,7 @@ return [
         'file' => 'File',
         'credit' => 'Credit',
         'debit' => 'Debit',
+        'value_hint' => 'Value',
     ],
 
     'statuses' => [
@@ -91,16 +93,24 @@ return [
     'messages' => [
         'import_success' => ':count transaction(s) imported successfully.',
         'import_failed' => 'Import failed: :error',
+        'no_transactions_found' => 'No transactions were found in the uploaded file.',
         'transaction_ignored' => 'Transaction marked as ignored.',
         'bulk_ignored' => ':count transaction(s) marked as ignored.',
         'no_transactions_selected' => 'Select at least one transaction.',
         'amount_mapping_required' => 'Map Amount or Debit/Credit before processing the import.',
-        'rules_apply_placeholder' => 'Rule application is scaffolded here. Task 06 adds the rule engine.',
+        'rules_applied' => ':count transaction(s) categorized by rules.',
+        'rules_auto_applied' => 'Rules auto-categorized :count imported transaction(s).',
+        'invalid_operator' => 'The selected operator is not valid for the chosen field.',
+        'numeric_rule_value' => 'Amount rules require a numeric value.',
+        'between_value_required' => 'Between rules require an ending value.',
+        'invalid_type_value' => 'Type rules must use deposit or withdrawal.',
+        'value_end_between_only' => 'Value End is only used with the Between operator.',
     ],
 
     'help' => [
-        'csv_upload' => 'Upload a CSV bank statement and map the columns on the next screen.',
+        'csv_upload' => 'Upload a CSV, OFX, or QFX bank statement. CSV files use column mapping; OFX and QFX import directly.',
         'column_mapping' => 'Map Date and Description, then choose either Amount or Debit/Credit columns.',
-        'rules' => 'Rules are stored here now; rule execution comes in the next task.',
+        'rules' => 'Rules run by priority. The first matching rule sets the target account and marks the transaction as categorized.',
+        'rule_value' => 'Use text for description rules, numbers for amount rules, and deposit or withdrawal for type rules.',
     ],
 ];

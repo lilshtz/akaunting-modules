@@ -35,7 +35,7 @@
                             <x-table.td>{{ trans('bank-feeds::general.statuses.' . $import->status) }}</x-table.td>
                             <x-table.td>
                                 <div class="flex items-center gap-3">
-                                    @if ($import->status === 'pending')
+                                    @if ($import->status === 'pending' && $import->format === 'csv')
                                         <a href="{{ route('bank-feeds.imports.map', $import->id) }}" class="text-sm font-medium text-blue-600 hover:text-blue-800">
                                             {{ trans('bank-feeds::general.map_columns') }}
                                         </a>

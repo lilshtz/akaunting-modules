@@ -25,12 +25,12 @@
             <x-table>
                 <x-table.thead>
                     <x-table.tr>
+                        <x-table.th>{{ trans('bank-feeds::general.priority') }}</x-table.th>
                         <x-table.th>{{ trans('general.name') }}</x-table.th>
                         <x-table.th>{{ trans('bank-feeds::general.field') }}</x-table.th>
                         <x-table.th>{{ trans('bank-feeds::general.operator') }}</x-table.th>
                         <x-table.th>{{ trans('bank-feeds::general.value') }}</x-table.th>
                         <x-table.th>{{ trans('bank-feeds::general.category') }}</x-table.th>
-                        <x-table.th>{{ trans('bank-feeds::general.priority') }}</x-table.th>
                         <x-table.th>{{ trans('general.enabled') }}</x-table.th>
                         <x-table.th>{{ trans('general.actions') }}</x-table.th>
                     </x-table.tr>
@@ -38,12 +38,12 @@
                 <x-table.tbody>
                     @forelse ($rules as $rule)
                         <x-table.tr>
+                            <x-table.td>{{ $rule->priority }}</x-table.td>
                             <x-table.td>{{ $rule->name }}</x-table.td>
                             <x-table.td>{{ trans('bank-feeds::general.rule_fields.' . $rule->field) }}</x-table.td>
                             <x-table.td>{{ trans('bank-feeds::general.operators.' . $rule->operator) }}</x-table.td>
                             <x-table.td>{{ $rule->value }}{{ $rule->value_end ? ' / ' . $rule->value_end : '' }}</x-table.td>
-                            <x-table.td>{{ $rule->category?->name ?? '—' }}</x-table.td>
-                            <x-table.td>{{ $rule->priority }}</x-table.td>
+                            <x-table.td>{{ $rule->category ? trim($rule->category->code . ' - ' . $rule->category->name) : '—' }}</x-table.td>
                             <x-table.td>{{ $rule->enabled ? trans('bank-feeds::general.enabled_label') : trans('bank-feeds::general.disabled_label') }}</x-table.td>
                             <x-table.td>
                                 <div class="flex items-center gap-3">

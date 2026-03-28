@@ -14,7 +14,7 @@ class ImportUpload extends Request
     public function rules(): array
     {
         return [
-            'file' => 'required|file|mimes:csv,txt|max:10240',
+            'file' => 'required|file|mimes:csv,txt,ofx,qfx|max:10240',
             'bank_account_id' => 'nullable|integer',
         ];
     }

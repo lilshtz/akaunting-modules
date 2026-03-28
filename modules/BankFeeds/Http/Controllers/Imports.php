@@ -3,6 +3,7 @@
 namespace Modules\BankFeeds\Http\Controllers;
 
 use App\Abstracts\Http\Controller;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,11 +12,18 @@ use Modules\BankFeeds\Http\Requests\ImportUpload;
 use Modules\BankFeeds\Models\Import;
 use Modules\BankFeeds\Models\Transaction;
 use Modules\BankFeeds\Services\CsvParser;
+use Modules\BankFeeds\Services\OfxParser;
+use Modules\BankFeeds\Services\RuleEngine;
 use Modules\DoubleEntry\Models\Account;
+use RuntimeException;
 
 class Imports extends Controller
 {
-    public function __construct(protected CsvParser $parser)
+    public function __construct(
+        protected CsvParser $csvParser,
+        protected OfxParser $ofxParser,
+        protected RuleEngine $ruleEngine
+    )
     {
     }
 
@@ -48,17 +56,44 @@ class Imports extends Controller
     {
         $file = $request->file('file');
         $storedPath = $file->store('bank-feeds/' . company_id(), 'local');
+        $format = $this->detectFormat($file->getClientOriginalName());
 
         $import = Import::create([
             'company_id' => company_id(),
             'bank_account_id' => $request->integer('bank_account_id') ?: null,
             'filename' => $storedPath,
             'original_filename' => $file->getClientOriginalName(),
-            'format' => 'csv',
+            'format' => $format,
             'status' => 'pending',
         ]);
 
-        return redirect()->route('bank-feeds.imports.map', $import->id);
+        if ($format === 'csv') {
+            return redirect()->route('bank-feeds.imports.map', $import->id);
+        }
+
+        try {
+            $rows = $this->ofxParser->parse(Storage::disk('local')->path($import->filename));
+
+            $import->update([
+                'status' => 'processing',
+                'error_message' => null,
+            ]);
+
+            $this->storeTransactions($import, $rows);
+
+            flash(trans('bank-feeds::general.messages.import_success', ['count' => count($rows)]))->success();
+
+            return redirect()->route('bank-feeds.transactions.index', ['import' => $import->id]);
+        } catch (\Throwable $e) {
+            $import->update([
+                'status' => 'failed',
+                'error_message' => $e->getMessage(),
+            ]);
+
+            flash(trans('bank-feeds::general.messages.import_failed', ['error' => $e->getMessage()]))->error();
+
+            return redirect()->route('bank-feeds.imports.create');
+        }
     }
 
     public function mapColumns(int $id)
@@ -69,7 +104,11 @@ class Imports extends Controller
             abort(404);
         }
 
-        $headers = $this->parser->parseHeaders(Storage::disk('local')->path($import->filename));
+        if ($import->format !== 'csv') {
+            return redirect()->route('bank-feeds.transactions.index', ['import' => $import->id]);
+        }
+
+        $headers = $this->csvParser->parseHeaders(Storage::disk('local')->path($import->filename));
         $savedMapping = [];
 
         if ($import->bank_account_id) {
@@ -109,7 +148,7 @@ class Imports extends Controller
 
         try {
             $path = Storage::disk('local')->path($import->filename);
-            $rows = $this->parser->parseRows($path, $mapping);
+            $rows = $this->csvParser->parseRows($path, $mapping);
 
             $import->update([
                 'status' => 'processing',
@@ -117,41 +156,7 @@ class Imports extends Controller
                 'error_message' => null,
             ]);
 
-            DB::transaction(function () use ($import, $rows): void {
-                Transaction::query()
-                    ->byCompany()
-                    ->where('import_id', $import->id)
-                    ->delete();
-
-                foreach ($rows as $row) {
-                    $hash = hash('sha256', $row['date'] . '|' . $row['amount'] . '|' . $row['description']);
-
-                    $duplicateExists = Transaction::query()
-                        ->byCompany()
-                        ->where('duplicate_hash', $hash)
-                        ->exists();
-
-                    Transaction::create([
-                        'company_id' => company_id(),
-                        'import_id' => $import->id,
-                        'bank_account_id' => $import->bank_account_id,
-                        'date' => $row['date'],
-                        'description' => $row['description'],
-                        'amount' => $row['amount'],
-                        'type' => $row['type'],
-                        'raw_data_json' => $row['raw_data_json'],
-                        'status' => 'pending',
-                        'duplicate_hash' => $hash,
-                        'is_duplicate' => $duplicateExists,
-                    ]);
-                }
-            });
-
-            $import->update([
-                'row_count' => count($rows),
-                'status' => 'complete',
-                'imported_at' => now(),
-            ]);
+            $this->storeTransactions($import, $rows);
 
             flash(trans('bank-feeds::general.messages.import_success', ['count' => count($rows)]))->success();
 
@@ -181,5 +186,72 @@ class Imports extends Controller
         flash(trans('messages.success.deleted', ['type' => trans('bank-feeds::general.import')]))->success();
 
         return redirect()->route('bank-feeds.imports.index');
+    }
+
+    protected function detectFormat(string $filename): string
+    {
+        $extension = strtolower((string) pathinfo($filename, PATHINFO_EXTENSION));
+
+        return match ($extension) {
+            'ofx' => 'ofx',
+            'qfx' => 'qfx',
+            default => 'csv',
+        };
+    }
+
+    protected function storeTransactions(Import $import, array $rows): Collection
+    {
+        if (empty($rows)) {
+            throw new RuntimeException(trans('bank-feeds::general.messages.no_transactions_found'));
+        }
+
+        $transactions = DB::transaction(function () use ($import, $rows): Collection {
+            Transaction::query()
+                ->byCompany()
+                ->where('import_id', $import->id)
+                ->delete();
+
+            $transactions = new Collection();
+
+            foreach ($rows as $row) {
+                $hash = hash('sha256', $row['date'] . '|' . $row['amount'] . '|' . $row['description']);
+
+                $duplicateExists = Transaction::query()
+                    ->byCompany()
+                    ->where('duplicate_hash', $hash)
+                    ->exists();
+
+                $transactions->push(Transaction::create([
+                    'company_id' => company_id(),
+                    'import_id' => $import->id,
+                    'bank_account_id' => $import->bank_account_id,
+                    'date' => $row['date'],
+                    'description' => $row['description'],
+                    'amount' => $row['amount'],
+                    'type' => $row['type'],
+                    'raw_data_json' => $row['raw_data_json'] ?? $row,
+                    'status' => 'pending',
+                    'duplicate_hash' => $hash,
+                    'is_duplicate' => $duplicateExists,
+                ]));
+            }
+
+            return $transactions;
+        });
+
+        $categorizedCount = $this->ruleEngine->applyRules($transactions, company_id());
+
+        $import->update([
+            'row_count' => count($rows),
+            'status' => 'complete',
+            'imported_at' => now(),
+            'error_message' => null,
+        ]);
+
+        if ($categorizedCount > 0) {
+            flash(trans('bank-feeds::general.messages.rules_auto_applied', ['count' => $categorizedCount]))->success();
+        }
+
+        return $transactions;
     }
 }

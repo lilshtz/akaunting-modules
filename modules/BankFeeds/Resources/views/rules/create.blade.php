@@ -3,22 +3,9 @@
 @section('title', trans('general.title.new', ['type' => trans('bank-feeds::general.rule')]))
 
 @section('content')
-    <div class="space-y-6">
-        <div>
-            <h1 class="text-xl font-semibold text-gray-900">{{ trans('general.title.new', ['type' => trans('bank-feeds::general.rule')]) }}</h1>
-            <p class="mt-1 text-sm text-gray-500">{{ trans('bank-feeds::general.help.rules') }}</p>
-        </div>
-
-        <div class="rounded-xl bg-white p-6 shadow-sm">
-            <form method="POST" action="{{ route('bank-feeds.rules.store') }}" class="space-y-6">
-                @csrf
-                @include('bank-feeds::rules._form', ['rule' => null])
-
-                <div class="flex items-center justify-end gap-3">
-                    <a href="{{ route('bank-feeds.rules.index') }}" class="inline-flex rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">{{ trans('general.cancel') }}</a>
-                    <button type="submit" class="inline-flex rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">{{ trans('general.save') }}</button>
-                </div>
-            </form>
-        </div>
-    </div>
+    <x-form.container>
+        <x-form id="bank-feed-rule" method="POST" route="bank-feeds.rules.store">
+            @include('bank-feeds::rules._form', ['rule' => null])
+        </x-form>
+    </x-form.container>
 @endsection

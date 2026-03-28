@@ -6,10 +6,16 @@ use App\Abstracts\Http\Controller;
 use Illuminate\Http\RedirectResponse;
 use Modules\BankFeeds\Http\Requests\RuleStore;
 use Modules\BankFeeds\Models\Rule;
+use Modules\BankFeeds\Models\Transaction;
+use Modules\BankFeeds\Services\RuleEngine;
 use Modules\DoubleEntry\Models\Account;
 
 class Rules extends Controller
 {
+    public function __construct(protected RuleEngine $ruleEngine)
+    {
+    }
+
     public function index()
     {
         $rules = Rule::query()
@@ -36,7 +42,7 @@ class Rules extends Controller
             'operator' => $request->string('operator')->toString(),
             'value' => $request->string('value')->toString(),
             'value_end' => $request->input('value_end'),
-            'category_id' => $request->integer('category_id') ?: null,
+            'category_id' => $request->integer('category_id'),
             'enabled' => $request->boolean('enabled', false),
             'priority' => $request->integer('priority'),
         ]);
@@ -68,7 +74,7 @@ class Rules extends Controller
             'operator' => $request->string('operator')->toString(),
             'value' => $request->string('value')->toString(),
             'value_end' => $request->input('value_end'),
-            'category_id' => $request->integer('category_id') ?: null,
+            'category_id' => $request->integer('category_id'),
             'enabled' => $request->boolean('enabled', false),
             'priority' => $request->integer('priority'),
         ]);
@@ -90,7 +96,17 @@ class Rules extends Controller
 
     public function apply(): RedirectResponse
     {
-        flash(trans('bank-feeds::general.messages.rules_apply_placeholder'))->warning();
+        $transactions = Transaction::query()
+            ->byCompany()
+            ->where('status', 'pending')
+            ->whereNull('category_id')
+            ->orderBy('date')
+            ->orderBy('id')
+            ->get();
+
+        $count = $this->ruleEngine->applyRules($transactions, company_id());
+
+        flash(trans('bank-feeds::general.messages.rules_applied', ['count' => $count]))->success();
 
         return redirect()->route('bank-feeds.transactions.index');
     }
@@ -110,12 +126,19 @@ class Rules extends Controller
                 'type' => trans('bank-feeds::general.rule_fields.type'),
             ],
             'operatorOptions' => [
-                'contains' => trans('bank-feeds::general.operators.contains'),
-                'equals' => trans('bank-feeds::general.operators.equals'),
-                'starts_with' => trans('bank-feeds::general.operators.starts_with'),
-                'gt' => trans('bank-feeds::general.operators.gt'),
-                'lt' => trans('bank-feeds::general.operators.lt'),
-                'between' => trans('bank-feeds::general.operators.between'),
+                'description' => [
+                    'contains' => trans('bank-feeds::general.operators.contains'),
+                    'equals' => trans('bank-feeds::general.operators.equals'),
+                    'starts_with' => trans('bank-feeds::general.operators.starts_with'),
+                ],
+                'amount' => [
+                    'gt' => trans('bank-feeds::general.operators.gt'),
+                    'lt' => trans('bank-feeds::general.operators.lt'),
+                    'between' => trans('bank-feeds::general.operators.between'),
+                ],
+                'type' => [
+                    'equals' => trans('bank-feeds::general.operators.equals'),
+                ],
             ],
         ];
     }

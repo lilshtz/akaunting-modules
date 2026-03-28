@@ -74,7 +74,7 @@
                                 </x-table.td>
                                 <x-table.td>{{ number_format((float) $transaction->amount, 4) }}</x-table.td>
                                 <x-table.td>{{ trans('bank-feeds::general.types.' . $transaction->type) }}</x-table.td>
-                                <x-table.td>{{ $transaction->category?->name ?? '—' }}</x-table.td>
+                                <x-table.td>{{ $transaction->category ? trim($transaction->category->code . ' - ' . $transaction->category->name) : '—' }}</x-table.td>
                                 <x-table.td>{{ trans('bank-feeds::general.statuses.' . $transaction->status) }}</x-table.td>
                                 <x-table.td>
                                     @if ($transaction->status !== 'ignored')
