@@ -3,6 +3,7 @@
 namespace Modules\DoubleEntry\Models;
 
 use App\Abstracts\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AccountDefault extends Model
@@ -17,8 +18,13 @@ class AccountDefault extends Model
 
     protected $sortable = ['type', 'created_at'];
 
+    public function scopeByCompany(Builder $query, ?int $companyId = null): Builder
+    {
+        return $query->where($this->qualifyColumn('company_id'), $companyId ?? company_id());
+    }
+
     public function account(): BelongsTo
     {
-        return $this->belongsTo(Account::class, 'account_id');
+        return $this->belongsTo(Account::class, 'account_id')->withTrashed();
     }
 }
